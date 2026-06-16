@@ -1,0 +1,835 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idiom Master</title>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --primary-hover: #357ABD;
+            --bg: #F5F7FA;
+            --card-bg: #FFFFFF;
+            --text-main: #333333;
+            --text-light: #666666;
+            --success: #2ECC71;
+            --danger: #E74C3C;
+            --warning: #F39C12;
+            --star: #F5A623;
+            --border: #E0E0E0;
+            --example-bg: #f0f4f8;
+            --card-back-bg: #FAFAFA;
+            --quiz-bg: #F9F9F9;
+            --progress-bg: #E0E0E0;
+            --footer-bg: #eef2f7;
+            --footer-text: #888;
+        }
+
+        body.dark-mode {
+            --primary: #5BA3F5;
+            --primary-hover: #4A90E2;
+            --bg: #1a1d2e;
+            --card-bg: #252840;
+            --text-main: #E8E8F0;
+            --text-light: #9A9ABF;
+            --border: #3a3d5c;
+            --example-bg: #1e2138;
+            --card-back-bg: #1e2138;
+            --quiz-bg: #1e2138;
+            --progress-bg: #3a3d5c;
+            --footer-bg: #1e2138;
+            --footer-text: #666;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        header { text-align: center; margin-bottom: 20px; width: 100%; max-width: 700px; position: relative; }
+        h1 { color: var(--primary); margin-bottom: 15px; }
+
+        .nav-buttons {
+            display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 15px; border: none; border-radius: 8px; background-color: var(--card-bg);
+            color: var(--primary); font-weight: bold; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: all 0.2s;
+        }
+
+        button.active { background-color: var(--primary); color: white; }
+        button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .progress-container {
+            width: 100%; background-color: var(--progress-bg); border-radius: 10px; height: 10px; margin-bottom: 20px; overflow: hidden;
+        }
+        .progress-bar { height: 100%; background-color: var(--success); width: 0%; transition: width 0.3s ease; }
+
+        .app-container {
+            width: 100%; max-width: 700px; background: var(--card-bg); border-radius: 15px;
+            padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.08); min-height: 450px; display: flex; flex-direction: column;
+            transition: background-color 0.3s;
+        }
+
+        /* Flashcard Styles */
+        .scene { width: 100%; height: 320px; perspective: 1000px; margin-bottom: 20px; }
+        .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s; transform-style: preserve-3d; cursor: pointer; }
+        .card.is-flipped { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center;
+            border: 2px solid var(--primary); background: var(--card-bg);
+        }
+        .card-back { transform: rotateY(180deg); background: var(--card-back-bg); justify-content: flex-start; padding-top: 30px; overflow-y: auto;}
+
+        .idiom-title { font-size: 26px; font-weight: bold; margin-bottom: 10px; color: var(--primary); }
+        .zh-meaning { font-size: 20px; font-weight: bold; margin-bottom: 5px; color: var(--text-main);}
+        .en-meaning { font-size: 15px; color: var(--text-light); margin-bottom: 15px; font-style: italic; }
+        
+        .example-box { background: var(--example-bg); padding: 12px; border-radius: 8px; width: 100%; text-align: left; }
+        .example-text { font-size: 16px; line-height: 1.4; color: var(--text-main); margin-bottom: 6px; font-weight: 500;}
+        .example-zh { font-size: 14px; color: var(--text-light); }
+
+        .star-btn { position: absolute; top: 15px; right: 15px; font-size: 26px; background: none; border: none; box-shadow: none; color: #ccc; padding: 0; z-index: 10;}
+        .star-btn.starred { color: var(--star); }
+        .star-btn:hover { transform: scale(1.1); box-shadow: none; }
+
+        .controls { display: flex; justify-content: space-between; gap: 15px; margin-top: auto; }
+        .btn-success { background-color: var(--success); color: white; flex: 1; padding: 15px; font-size: 16px;}
+        .btn-danger { background-color: var(--danger); color: white; flex: 1; padding: 15px; font-size: 16px;}
+        .btn-warning { background-color: var(--warning); color: white; padding: 10px 15px; font-size: 14px;}
+
+        /* Match Styles */
+        .match-container { display: flex; gap: 15px; height: 100%; flex: 1; }
+        .match-column { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .match-item {
+            padding: 15px 10px; border: 2px solid var(--border); border-radius: 8px; text-align: center;
+            cursor: pointer; font-size: 14px; transition: all 0.2s; background: var(--card-bg);
+            display: flex; align-items: center; justify-content: center; min-height: 60px; color: var(--text-main);
+        }
+        .match-item.selected { border-color: var(--primary); background-color: rgba(74,144,226,0.1); }
+        .match-item.matched { visibility: hidden; }
+        .match-item.error { border-color: var(--danger); background-color: rgba(231,76,60,0.1); }
+
+        /* Quiz Styles */
+        .quiz-container { text-align: center; display: flex; flex-direction: column; height: 100%; }
+        .quiz-sentence { font-size: 18px; margin-bottom: 15px; line-height: 1.5; padding: 20px; background: var(--quiz-bg); border-radius: 10px; color: var(--text-main);}
+        .quiz-zh-hint { font-size: 15px; color: var(--text-light); margin-bottom: 20px; display: none; background: rgba(46,204,113,0.1); padding: 10px; border-radius: 6px;}
+        .quiz-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;}
+        .quiz-option { width: 100%; padding: 15px; font-size: 16px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main);}
+        .quiz-option:hover:not(:disabled) { border-color: var(--primary); }
+        .quiz-option.correct { background-color: var(--success); color: white; border-color: var(--success); }
+        .quiz-option.wrong { background-color: var(--danger); color: white; border-color: var(--danger); }
+
+        /* Quiz score */
+        .quiz-score { font-size: 14px; color: var(--text-light); margin-bottom: 10px; text-align: right; }
+        .quiz-score span { font-weight: bold; color: var(--primary); font-size: 16px; }
+
+        /* Data Manager Styles */
+        .data-manager { display: flex; flex-direction: column; height: 100%; gap: 15px; }
+        .json-textarea { width: 100%; height: 200px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: monospace; resize: vertical; background: var(--example-bg); color: var(--text-main); }
+        .data-controls { display: flex; gap: 10px; flex-wrap: wrap; }
+        .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; }
+        .file-input-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
+
+        /* JSON format guide */
+        .format-guide { background: var(--example-bg); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
+        .format-guide summary { padding: 10px 14px; cursor: pointer; font-size: 13px; color: var(--text-light); font-weight: 600; user-select: none; }
+        .format-guide summary:hover { color: var(--primary); }
+        .format-guide pre { font-size: 11px; padding: 10px 14px; overflow-x: auto; color: var(--text-main); line-height: 1.6; border-top: 1px solid var(--border); }
+
+        /* File list rows */
+        .file-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px; background: var(--example-bg);
+            border: 1px solid var(--border); border-radius: 8px;
+            font-size: 13px;
+        }
+        .file-row .file-name { flex: 1; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .file-row .file-count { color: var(--text-light); white-space: nowrap; }
+        .file-row .file-toggle { cursor: pointer; font-size: 18px; background: none; border: none; box-shadow: none; padding: 0 4px; color: var(--success); }
+        .file-row .file-toggle.excluded { color: #ccc; }
+        .file-row .file-toggle:hover { transform: scale(1.2); box-shadow: none; }
+        .file-row .file-remove { cursor: pointer; font-size: 14px; background: none; border: none; box-shadow: none; padding: 0 4px; color: var(--danger); opacity: 0.6; }
+        .file-row .file-remove:hover { opacity: 1; transform: none; box-shadow: none; }
+
+        /* Dark mode toggle */
+        .dark-toggle {
+            position: absolute; top: 20px; right: 20px;
+            background: var(--card-bg); border: 1px solid var(--border);
+            border-radius: 20px; padding: 6px 12px; font-size: 14px;
+            cursor: pointer; color: var(--text-light); box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .dark-toggle:hover { color: var(--primary); border-color: var(--primary); transform: none; box-shadow: none; }
+
+        /* Card counter */
+        .card-counter { font-size: 13px; color: var(--text-light); position: absolute; top: 15px; left: 15px; }
+
+        /* Starred empty state */
+        .starred-empty { text-align: center; padding: 30px 20px; color: var(--text-light); font-size: 15px; }
+        .starred-empty .empty-icon { font-size: 40px; margin-bottom: 10px; }
+
+        /* Keyboard hint */
+        .keyboard-hint { font-size: 11px; color: var(--text-light); text-align: center; margin-top: 8px; opacity: 0.7; }
+
+        /* Footer */
+        footer {
+            width: 100%; max-width: 700px; margin-top: 30px; padding: 24px 20px 16px;
+            border-top: 1px solid var(--border); text-align: center;
+            background: transparent;
+        }
+        footer a { color: var(--primary); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        .hidden { display: none !important; }
+        .deck-selector { margin-bottom: 15px; padding: 8px; border-radius: 5px; border: 1px solid var(--border); font-size: 16px; width: 100%; max-width: 300px; background: var(--card-bg); color: var(--text-main);}
+        .completion-message { text-align: center; padding: 40px 20px; font-size: 20px; color: var(--success); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <button class="dark-toggle" onclick="toggleDarkMode()" id="darkToggleBtn">🌙 Dark</button>
+        
+        <h1 id="app-title-display">Idiom Master</h1>
+        <select id="deckSelect" class="deck-selector" onchange="changeDeck()"><option value="Unit 1: Knowledge and Understanding">Deck: Unit 1: Knowledge and Understanding</option><option value="Unit 2: Memory and Mind">Deck: Unit 2: Memory and Mind</option><option value="Unit 3: Communicating">Deck: Unit 3: Communicating</option><option value="Unit 4: Priorities and Decisions">Deck: Unit 4: Priorities and Decisions</option><option value="Unit 5: Relationships">Deck: Unit 5: Relationships</option><option value="Unit 6: Help and Encouragement">Deck: Unit 6: Help and Encouragement</option><option value="Unit 7: Involvement and Interest">Deck: Unit 7: Involvement and Interest</option><option value="Unit 8: Starting and Stopping">Deck: Unit 8: Starting and Stopping</option><option value="Unit 9: Effort">Deck: Unit 9: Effort</option><option value="Unit 10: Honesty and Fairness">Deck: Unit 10: Honesty and Fairness</option><option value="Unit 11: Deception">Deck: Unit 11: Deception</option><option value="Unit 12: Anger and Irritation">Deck: Unit 12: Anger and Irritation</option><option value="Unit 13: Fear and Frustration">Deck: Unit 13: Fear and Frustration</option><option value="Unit 14: Disagreement">Deck: Unit 14: Disagreement</option><option value="Unit 15: Success and Failure">Deck: Unit 15: Success and Failure</option><option value="Unit 16: Progress">Deck: Unit 16: Progress</option><option value="Unit 17: Expectation">Deck: Unit 17: Expectation</option><option value="Unit 18: Trouble and Difficulty">Deck: Unit 18: Trouble and Difficulty</option><option value="Unit 19: Safety and Risk">Deck: Unit 19: Safety and Risk</option><option value="Unit 20: Money">Deck: Unit 20: Money</option><option value="Unit 21: Authority and Control">Deck: Unit 21: Authority and Control</option><option value="Unit 22: Limitations and Restrictions">Deck: Unit 22: Limitations and Restrictions</option><option value="Unit 23: Loving and Liking">Deck: Unit 23: Loving and Liking</option><option value="Unit 24: Happiness and Sadness">Deck: Unit 24: Happiness and Sadness</option><option value="Unit 25: Health, Illness, and Death">Deck: Unit 25: Health, Illness, and Death</option><option value="starred">⭐ My Starred Idioms (生词本)</option></select>
+        <div class="nav-buttons">
+            <button id="btn-flashcard" class="" onclick="switchMode('flashcard')">Flashcards</button>
+            <button id="btn-match" onclick="switchMode('match')">Match</button>
+            <button id="btn-quiz" onclick="switchMode('quiz')">Quiz</button>
+            <button id="btn-starred" onclick="switchToStarred()" title="Practice starred idioms">⭐ Starred</button>
+        </div>
+        <div class="progress-container">
+            <div id="progressBar" class="progress-bar" style="width: 0%;"></div>
+        </div>
+    </header>
+
+    <div class="app-container">
+
+        <div id="view-flashcard" class="view-panel hidden">
+            <div id="flashcard-content">
+                <div class="scene">
+                    <div class="card" id="active-card" onclick="flipCard()">
+                        <div class="card-face card-front">
+                            <button class="star-btn" id="star-btn" onclick="toggleStar(event)">★</button>
+                            <div class="card-counter" id="card-counter">1 / 3</div>
+                            <div class="idiom-title" id="fc-front-text">break a leg</div>
+                            <div style="font-size: 14px; color: #999; margin-top: 20px;">Tap to flip</div>
+                        </div>
+                        <div class="card-face card-back">
+                            <div class="zh-meaning" id="fc-zh">祝你好运</div>
+                            <div class="en-meaning" id="fc-en">Good luck.</div>
+                            <div class="example-box">
+                                <div class="example-text" id="fc-ex">You have your big play tonight, so ___ (break a leg)!</div>
+                                <div class="example-zh" id="fc-exZh">你今晚有场大戏，祝你好运！</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="btn-danger" onclick="markCard('review')">Need Review (重学)</button>
+                    <button class="btn-success" onclick="markCard('got_it')">Got it! (记住了)</button>
+                </div>
+                <div class="keyboard-hint">⌨️ Space = flip &nbsp;|&nbsp; ← = Need Review &nbsp;|&nbsp; → = Got it</div>
+            </div>
+            <div id="flashcard-done" class="hidden completion-message">
+                🎉 Deck complete! Great job.<br>
+                <button style="margin-top: 20px; background: var(--primary); color: white;" onclick="resetFlashcards()">Practice Again</button>
+            </div>
+            <div id="starred-empty" class="hidden starred-empty">
+                <div class="empty-icon">⭐</div>
+                <p>Your starred list is empty!</p>
+                <p style="font-size:13px; margin-top:6px;">Tap the ★ on any flashcard to add it here.</p>
+            </div>
+        </div>
+
+        <div id="view-match" class="view-panel hidden">
+            <div style="text-align: center; margin-bottom: 15px; color: var(--text-light);">Match the English idiom to its Chinese meaning.</div>
+            <div class="match-container" id="match-game-board"></div>
+            <div id="match-done" class="hidden completion-message">
+                🏆 Excellent matching!<br>
+                <button style="margin-top: 20px; background: var(--primary); color: white;" onclick="startMatch()">Next Round</button>
+            </div>
+        </div>
+
+        <div id="view-quiz" class="view-panel hidden">
+            <div class="quiz-container" id="quiz-content">
+                <div class="quiz-score">Score: <span id="quiz-correct">0</span> / <span id="quiz-total">0</span></div>
+                <div class="quiz-sentence" id="quiz-sentence">Sentence loading...</div>
+                <div class="quiz-zh-hint" id="quiz-zh-hint">Translation loading...</div>
+                <div class="quiz-options" id="quiz-options"></div>
+                <button id="quiz-next-btn" class="hidden" style="background: var(--primary); color: white; padding: 15px;" onclick="nextQuiz()">Next Question ⏎</button>
+                <div class="keyboard-hint" style="margin-top:10px;">⌨️ 1 / 2 / 3 = select option &nbsp;|&nbsp; Enter = next question</div>
+            </div>
+        </div>
+
+        
+
+    </div>
+
+    <footer>
+        <svg viewBox="0 0 320 80" width="280" height="70" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Words That Think">
+            <circle cx="203" cy="14" r="4" fill="#e6a817"></circle>
+            <text x="160" y="46" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" fill="#1b3a4b" letter-spacing="0.5">Words That Think</text>
+            <line x1="110" y1="55" x2="210" y2="55" stroke="#e6a817" stroke-width="2.5" stroke-linecap="round"></line>
+        </svg>
+        <div style="font-size:12px; color:var(--footer-text); margin-top:6px; letter-spacing:0.3px;">
+            Created by Words That Think &nbsp;·&nbsp; © 2026 &nbsp;·&nbsp; For Educational Purposes Only
+        </div>
+    </footer>
+
+    <script>
+        let allIdioms = [{"deck":"Unit 1: Knowledge and Understanding","id":"get_the_hang_of","idiom":"get the hang of something","en":"to learn how to do an activity well","zh":"掌握某事的技巧","ex":"After a few lessons, she finally started to ___ riding a bicycle.","blankAns":"get the hang of","exZh":"上了几节课后，她终于开始掌握骑自行车的技巧了。"},{"deck":"Unit 1: Knowledge and Understanding","id":"get_the_picture","idiom":"get the picture","en":"to understand what is happening in a situation","zh":"明白情况；了解状况","ex":"After reading the report, I finally started to ___.","blankAns":"get the picture","exZh":"读完报告后，我终于开始了解情况了。"},{"deck":"Unit 1: Knowledge and Understanding","id":"get_wrong_end_of_stick","idiom":"get the wrong end of the stick","en":"to completely misunderstand a situation or something that is said","zh":"完全误解某事或某人的话","ex":"He thought she was angry at him, but he'd completely ___ — she was upset about something else.","blankAns":"got the wrong end of the stick","exZh":"他以为她在生他的气，但他完全误解了——她是因为别的事情而难过。"},{"deck":"Unit 1: Knowledge and Understanding","id":"get_head_around","idiom":"get your head around something","en":"to succeed in understanding or accepting a fact or idea","zh":"设法理解或接受某个事实或想法","ex":"It took me a while to ___ the new tax rules.","blankAns":"get my head around","exZh":"我花了一段时间才弄明白新的税收规定。"},{"deck":"Unit 1: Knowledge and Understanding","id":"in_one_ear_out_other","idiom":"go in one ear and out the other","en":"to be paid no attention to, or forgotten immediately","zh":"左耳进右耳出；听完即忘","ex":"I keep telling him to study harder, but everything I say just ___.","blankAns":"goes in one ear and out the other","exZh":"我一直告诉他要努力学习，但我说的话他左耳进右耳出。"},{"deck":"Unit 1: Knowledge and Understanding","id":"grey_area","idiom":"a grey area","en":"something unclear because nobody is sure how to deal with it","zh":"灰色地带；模糊不清的事物","ex":"Whether this counts as plagiarism is ___ — the rules are not specific enough.","blankAns":"a grey area","exZh":"这算不算抄袭是个灰色地带——规定还不够具体。"},{"deck":"Unit 1: Knowledge and Understanding","id":"not_have_a_clue","idiom":"not have a clue","en":"to know nothing about something, or have no idea what to do","zh":"一无所知；毫无头绪","ex":"When the teacher asked about the homework, he admitted he ___ what she was talking about.","blankAns":"didn't have a clue","exZh":"当老师问起作业的事时，他承认自己完全不知道她在说什么。"},{"deck":"Unit 1: Knowledge and Understanding","id":"jump_to_conclusions","idiom":"jump to conclusions","en":"to decide too quickly that something is true without knowing all the facts","zh":"仓促下结论；草率判断","ex":"Don't ___ just because he was late — maybe his train was delayed.","blankAns":"jump to conclusions","exZh":"别只因为他迟到就草率下结论——也许是他的火车晚点了。"},{"deck":"Unit 1: Knowledge and Understanding","id":"put_two_and_two_together","idiom":"put two and two together","en":"to correctly guess the truth about something from the information you have","zh":"根据现有信息推断出真相","ex":"When I saw the flowers and the restaurant booking, I ___ and realised he was planning to propose.","blankAns":"put two and two together","exZh":"当我看到鲜花和餐厅预订，我推断出他打算求婚了。"},{"deck":"Unit 1: Knowledge and Understanding","id":"read_between_the_lines","idiom":"read between the lines","en":"to understand what someone really means or what is really happening, even though it is not stated openly","zh":"理解言外之意；读懂弦外之音","ex":"She said she was 'fine', but if you ___, it was clear she was deeply unhappy.","blankAns":"read between the lines","exZh":"她说她'没事'，但如果你理解她的言外之意，就会发现她其实非常不开心。"},{"deck":"Unit 1: Knowledge and Understanding","id":"take_on_board","idiom":"take something on board","en":"to understand or accept an idea, suggestion, or fact","zh":"接受并理解某个想法、建议或事实","ex":"The manager promised to ___ all the feedback from the team.","blankAns":"take on board","exZh":"经理承诺会接受团队所有的反馈意见。"},{"deck":"Unit 1: Knowledge and Understanding","id":"up_to_speed","idiom":"up to speed","en":"having all the latest information about something","zh":"掌握最新情况；了解最新信息","ex":"Can you brief the new staff member? We need to get her ___ before the meeting.","blankAns":"up to speed","exZh":"你能给新员工做个简报吗？我们需要在会议前让她了解最新情况。"},{"deck":"Unit 2: Memory and Mind","id":"bear_something_in_mind","idiom":"bear something in mind / keep something in mind","en":"to remember an important piece of information","zh":"记住某事；牢记在心","ex":"Please ___ that the deadline is next Monday.","blankAns":"bear in mind","exZh":"请记住截止日期是下周一。"},{"deck":"Unit 2: Memory and Mind","id":"cross_your_mind","idiom":"cross your mind","en":"to suddenly think of something","zh":"突然闪过脑海","ex":"The idea never ___ until she mentioned it.","blankAns":"crossed my mind","exZh":"直到她提到，这个想法才突然闪过我的脑海。"},{"deck":"Unit 2: Memory and Mind","id":"food_for_thought","idiom":"food for thought","en":"something that makes you think seriously","zh":"引人深思的事物","ex":"The documentary gave me a lot of ___.","blankAns":"food for thought","exZh":"这部纪录片给了我很多思考。"},{"deck":"Unit 2: Memory and Mind","id":"a_gut_reaction","idiom":"a gut reaction","en":"an immediate, instinctive response","zh":"本能反应","ex":"My ___ was to say no, but I decided to sleep on it.","blankAns":"gut reaction","exZh":"我本能反应是想拒绝，但我决定先考虑一晚。"},{"deck":"Unit 2: Memory and Mind","id":"lose_the_plot","idiom":"lose the plot","en":"to become confused or unable to cope","zh":"失去理智；不知所措","ex":"When he started shouting at strangers, I thought he'd completely ___.","blankAns":"lost the plot","exZh":"他开始对陌生人大喊大叫时，我觉得他完全失去理智了。"},{"deck":"Unit 2: Memory and Mind","id":"miles_away","idiom":"miles away","en":"deep in thought and unaware of what's happening","zh":"心不在焉；想得出神","ex":"Sorry, I was ___ – what did you say?","blankAns":"miles away","exZh":"对不起，我刚才走神了——你说了什么？"},{"deck":"Unit 2: Memory and Mind","id":"a_mind_like_a_sieve","idiom":"a mind like a sieve","en":"a very bad memory","zh":"记忆力极差","ex":"I have ___; I keep forgetting people's names.","blankAns":"a mind like a sieve","exZh":"我记忆力很差，总是忘记别人的名字。"},{"deck":"Unit 2: Memory and Mind","id":"off_the_top_of_your_head","idiom":"off the top of your head","en":"without thinking carefully; an immediate guess","zh":"不假思索地；脱口而出","ex":"___, I can't think of any examples.","blankAns":"Off the top of my head","exZh":"我一下子想不出任何例子。"},{"deck":"Unit 2: Memory and Mind","id":"off_your_head","idiom":"off your head","en":"crazy or very foolish","zh":"疯了；脑子不正常","ex":"You must be ___ to drive in this weather!","blankAns":"off your head","exZh":"这种天气你还开车，你一定是疯了！"},{"deck":"Unit 2: Memory and Mind","id":"on_the_tip_of_your_tongue","idiom":"on the tip of your tongue","en":"almost remembered but not quite","zh":"话到嘴边（却想不起来）","ex":"His name is ___; I just can't recall it.","blankAns":"on the tip of my tongue","exZh":"他的名字就在嘴边，但我就是记不起来了。"},{"deck":"Unit 2: Memory and Mind","id":"out_of_your_mind","idiom":"out of your mind","en":"extremely stupid or crazy","zh":"发疯；精神失常","ex":"She was ___ to quit her job without another one lined up.","blankAns":"out of her mind","exZh":"她没有找到新工作就辞职，真是疯了。"},{"deck":"Unit 2: Memory and Mind","id":"rack_your_brain","idiom":"rack your brain","en":"to think very hard to remember something","zh":"绞尽脑汁；冥思苦想","ex":"I've been ___ trying to remember where I put my keys.","blankAns":"racking my brain","exZh":"我绞尽脑汁想回忆我把钥匙放在哪里了。"},{"deck":"Unit 2: Memory and Mind","id":"ring_a_bell","idiom":"ring a bell","en":"to sound familiar but not be fully remembered","zh":"听起来耳熟","ex":"Does the name 'John Smith' ___?","blankAns":"ring a bell","exZh":"“约翰·史密斯”这个名字听起来耳熟吗？"},{"deck":"Unit 3: Communicating","id":"at_cross_purposes","idiom":"at cross purposes","en":"misunderstanding each other by talking about different things","zh":"相互误解；各说各的","ex":"I think we're talking ___. I meant the meeting next week, not today.","blankAns":"at cross purposes","exZh":"我觉得我们说的不是一回事。我说的是下周的会议，不是今天。"},{"deck":"Unit 3: Communicating","id":"come_out_of_your_shell","idiom":"come out of your shell","en":"to become less shy and more confident","zh":"不再害羞；变得开朗","ex":"It took a while, but she finally ___ and made some friends.","blankAns":"came out of her shell","exZh":"过了一段时间，她终于不再害羞，交了一些朋友。"},{"deck":"Unit 3: Communicating","id":"find_common_ground","idiom":"find common ground","en":"to agree on something despite other differences","zh":"找到共同点","ex":"The two politicians managed to ___ on education reform.","blankAns":"find common ground","exZh":"两位政治家在教育改革上找到了共同点。"},{"deck":"Unit 3: Communicating","id":"from_the_horses_mouth","idiom":"from the horse's mouth","en":"directly from the person involved or the original source","zh":"第一手消息；直接来自当事人","ex":"I got the news ___, so I know it's true.","blankAns":"from the horse's mouth","exZh":"我从当事人那里直接得到的消息，所以我知道是真的。"},{"deck":"Unit 3: Communicating","id":"get_your_wires_crossed","idiom":"get your wires crossed / get your lines crossed","en":"to misunderstand each other","zh":"产生误会；彼此误解","ex":"We must have ___ – I said 7 pm, not 7 am.","blankAns":"got our wires crossed","exZh":"我们一定是误会了——我说的是晚上七点，不是早上七点。"},{"deck":"Unit 3: Communicating","id":"go_off_on_a_tangent","idiom":"go off on a tangent / go off at a tangent","en":"to suddenly start talking about something unrelated","zh":"突然离题；跑题","ex":"He started explaining the budget but then ___ about his holiday.","blankAns":"went off on a tangent","exZh":"他开始解释预算，但接着就跑题聊起了他的假期。"},{"deck":"Unit 3: Communicating","id":"hear_something_through_the_grapevine","idiom":"hear something through the grapevine / hear something on the grapevine","en":"to hear news informally from someone else","zh":"道听途说；听小道消息","ex":"I ___ that they're planning to get married.","blankAns":"heard through the grapevine","exZh":"我听小道消息说他们打算结婚了。"},{"deck":"Unit 3: Communicating","id":"in_black_and_white","idiom":"in black and white","en":"in written or printed form as proof","zh":"白纸黑字；书面证据","ex":"I won't believe it until I see it ___.","blankAns":"in black and white","exZh":"除非我看到白纸黑字的证据，否则我不会相信。"},{"deck":"Unit 3: Communicating","id":"in_the_loop","idiom":"in the loop","en":"included in a group that shares information","zh":"在消息圈内；知情","ex":"Please keep me ___ about any changes to the project.","blankAns":"in the loop","exZh":"项目有任何变动请随时通知我。"},{"deck":"Unit 3: Communicating","id":"keep_someone_posted","idiom":"keep someone posted","en":"to continue giving someone the latest information","zh":"随时告知最新情况","ex":"I'll ___ on how the interview goes.","blankAns":"keep you posted","exZh":"我会随时告诉你面试的进展。"},{"deck":"Unit 3: Communicating","id":"let_the_cat_out_of_the_bag","idiom":"let the cat out of the bag","en":"to reveal a secret, often accidentally","zh":"无意中泄密；露馅","ex":"She ___ about the surprise party.","blankAns":"let the cat out of the bag","exZh":"她不小心泄露了惊喜派对的事。"},{"deck":"Unit 3: Communicating","id":"put_someone_in_the_picture","idiom":"put someone in the picture","en":"to tell someone about a situation they need to know about","zh":"告知情况；使了解内情","ex":"Let me ___ before the meeting so you know what's going on.","blankAns":"put you in the picture","exZh":"开会前让我告诉你情况，这样你就知道怎么回事了。"},{"deck":"Unit 3: Communicating","id":"spill_the_beans","idiom":"spill the beans","en":"to reveal the truth about something secret","zh":"泄露秘密；坦白","ex":"OK, I'll ___ – I'm the one who broke the vase.","blankAns":"spill the beans","exZh":"好吧，我坦白——是我打碎了花瓶。"},{"deck":"Unit 3: Communicating","id":"touch_base","idiom":"touch base","en":"to contact someone, often after a long time","zh":"联系；碰头","ex":"Let's ___ next week to discuss the details.","blankAns":"touch base","exZh":"我们下周碰个头讨论细节吧。"},{"deck":"Unit 4: Priorities and Decisions","id":"the_bottom_line","idiom":"the bottom line","en":"the most important fact or result","zh":"底线；最重要的事实","ex":"The ___ is that we need more money to continue.","blankAns":"bottom line","exZh":"底线是我们需要更多资金才能继续。"},{"deck":"Unit 4: Priorities and Decisions","id":"cross_that_bridge_when_you_come_to_it","idiom":"cross that bridge when you come to it","en":"to deal with a problem only when it happens","zh":"船到桥头自然直；到时候再说","ex":"I don't know how we'll pay, but I'll ___.","blankAns":"cross that bridge when I come to it","exZh":"我不知道我们怎么付钱，但到时候再说吧。"},{"deck":"Unit 4: Priorities and Decisions","id":"cut_to_the_chase","idiom":"cut to the chase","en":"to start talking about the most important part","zh":"切入正题；直说要点","ex":"Let's ___ – how much does it cost?","blankAns":"cut to the chase","exZh":"我们直说吧——这要多少钱？"},{"deck":"Unit 4: Priorities and Decisions","id":"the_icing_on_the_cake","idiom":"the icing on the cake","en":"an extra good thing that makes a situation even better","zh":"锦上添花","ex":"The bonus was nice, but the promotion was the ___.","blankAns":"icing on the cake","exZh":"奖金固然好，但升职才是锦上添花。"},{"deck":"Unit 4: Priorities and Decisions","id":"in_two_minds","idiom":"in two minds","en":"unable to decide about something","zh":"犹豫不决；拿不定主意","ex":"I'm ___ about accepting the job offer.","blankAns":"in two minds","exZh":"我对是否接受这份工作拿不定主意。"},{"deck":"Unit 4: Priorities and Decisions","id":"make_a_mountain_out_of_a_molehill","idiom":"make a mountain out of a molehill","en":"to treat a small problem as if it were very serious","zh":"小题大做","ex":"He's just late – don't ___.","blankAns":"make a mountain out of a molehill","exZh":"他只是迟到而已——别小题大做。"},{"deck":"Unit 4: Priorities and Decisions","id":"on_the_back_burner","idiom":"on the back burner","en":"delayed until a later time","zh":"搁置；暂缓处理","ex":"I've put that project ___ for now.","blankAns":"on the back burner","exZh":"我暂时搁置了那个项目。"},{"deck":"Unit 4: Priorities and Decisions","id":"play_it_by_ear","idiom":"play it by ear","en":"to deal with events as they happen, not according to a plan","zh":"见机行事；看情况办","ex":"We haven't made a fixed plan; we'll just ___.","blankAns":"play it by ear","exZh":"我们没有定死计划，到时候见机行事。"},{"deck":"Unit 4: Priorities and Decisions","id":"sit_on_the_fence","idiom":"sit on the fence","en":"to avoid taking sides in an argument","zh":"骑墙；保持中立","ex":"Stop ___ and tell us who you support.","blankAns":"sitting on the fence","exZh":"别再骑墙了，告诉我们你支持谁。"},{"deck":"Unit 4: Priorities and Decisions","id":"split_hairs","idiom":"split hairs","en":"to argue about tiny, unimportant differences","zh":"斤斤计较；吹毛求疵","ex":"We're ___ over a few dollars.","blankAns":"splitting hairs","exZh":"我们为几块钱在斤斤计较。"},{"deck":"Unit 4: Priorities and Decisions","id":"stick_to_your_guns","idiom":"stick to your guns","en":"to refuse to change your opinion or decision","zh":"坚持立场；固执己见","ex":"Even under pressure, she ___ and kept her original plan.","blankAns":"stuck to her guns","exZh":"即使在压力下，她依然坚持原来的计划。"},{"deck":"Unit 4: Priorities and Decisions","id":"take_a_back_seat","idiom":"take a back seat","en":"to let others be more important or in charge","zh":"退居次要位置；让位","ex":"I'll ___ and let you lead this time.","blankAns":"take a back seat","exZh":"这次我退居二线，让你来主导。"},{"deck":"Unit 4: Priorities and Decisions","id":"the_tip_of_the_iceberg","idiom":"the tip of the iceberg","en":"a small, visible part of a much larger problem","zh":"冰山一角","ex":"The lost files are just ___; the whole system is flawed.","blankAns":"the tip of the iceberg","exZh":"丢失的文件只是冰山一角，整个系统都有问题。"},{"deck":"Unit 4: Priorities and Decisions","id":"up_in_the_air","idiom":"up in the air","en":"not yet decided or certain","zh":"悬而未决；不确定","ex":"Our holiday plans are still ___.","blankAns":"up in the air","exZh":"我们的假期计划还没定下来。"},{"deck":"Unit 5: Relationships","id":"break_the_ice","idiom":"break the ice","en":"to make people feel more comfortable in a social situation","zh":"打破冷场；活跃气氛","ex":"He told a joke to ___ at the start of the meeting.","blankAns":"break the ice","exZh":"他在会议开始时讲了个笑话来活跃气氛。"},{"deck":"Unit 5: Relationships","id":"get_off_on_the_wrong_foot","idiom":"get off on the wrong foot","en":"to start a relationship or activity badly","zh":"一开始就关系不好；出师不利","ex":"I ___ with my new boss by arriving late on the first day.","blankAns":"got off on the wrong foot","exZh":"我第一天就迟到，和新上司一开始就关系不好。"},{"deck":"Unit 5: Relationships","id":"get_on_like_a_house_on_fire","idiom":"get on like a house on fire","en":"to quickly become very close friends","zh":"一见如故；打得火热","ex":"They met at a party and ___.","blankAns":"got on like a house on fire","exZh":"他们在派对上认识，一见如故。"},{"deck":"Unit 5: Relationships","id":"get_on_someones_nerves","idiom":"get on someone's nerves","en":"to irritate or annoy someone repeatedly","zh":"使某人烦躁；惹恼某人","ex":"That constant tapping noise is really ___.","blankAns":"getting on my nerves","exZh":"那个不停的敲击声真让我心烦。"},{"deck":"Unit 5: Relationships","id":"give_someone_the_cold_shoulder","idiom":"give someone the cold shoulder","en":"to deliberately ignore someone","zh":"冷落某人；不理不睬","ex":"After the argument, she ___ for days.","blankAns":"gave him the cold shoulder","exZh":"吵架后，她好几天都不理他。"},{"deck":"Unit 5: Relationships","id":"go_back_a_long_way","idiom":"go back a long way","en":"to have been friends for a very long time","zh":"相识多年；交情很深","ex":"We ___ — since primary school.","blankAns":"go back a long way","exZh":"我们认识很久了——从小学就开始了。"},{"deck":"Unit 5: Relationships","id":"hit_it_off","idiom":"hit it off","en":"to immediately like each other and get along well","zh":"合得来；一拍即合","ex":"I was worried they wouldn't get along, but they ___ straight away.","blankAns":"hit it off","exZh":"我担心他们合不来，但他们一下子就混熟了。"},{"deck":"Unit 5: Relationships","id":"leave_someone_in_the_lurch","idiom":"leave someone in the lurch","en":"to abandon someone in a difficult situation","zh":"丢下某人不管；见死不救","ex":"My partner ___ by quitting just before the deadline.","blankAns":"left me in the lurch","exZh":"我的搭档在截止日期前辞职，丢下我不管。"},{"deck":"Unit 5: Relationships","id":"on_the_rocks","idiom":"on the rocks","en":"likely to end due to serious problems","zh":"岌岌可危；陷入危机","ex":"Their marriage was ___ after years of arguments.","blankAns":"on the rocks","exZh":"经过多年争吵，他们的婚姻岌岌可危。"},{"deck":"Unit 5: Relationships","id":"on_the_same_wavelength","idiom":"on the same wavelength","en":"thinking in the same way; understanding each other easily","zh":"志趣相投；步调一致","ex":"We're ___ — we always know what the other is thinking.","blankAns":"on the same wavelength","exZh":"我们很合拍——总是知道对方在想什么。"},{"deck":"Unit 5: Relationships","id":"save_face","idiom":"save face","en":"to avoid embarrassment or loss of respect","zh":"保全面子","ex":"He apologised publicly to ___.","blankAns":"save face","exZh":"他公开道歉以保全面子。"},{"deck":"Unit 5: Relationships","id":"sparks_fly","idiom":"sparks fly","en":"to argue angrily with someone","zh":"激烈争吵；火药味十足","ex":"Whenever they discuss politics, ___.","blankAns":"sparks fly","exZh":"他们一讨论政治就吵得不可开交。"},{"deck":"Unit 5: Relationships","id":"treat_someone_like_dirt","idiom":"treat someone like dirt","en":"to treat someone with no respect, very badly","zh":"把某人当下等人对待；轻视","ex":"She ___ after she got promoted.","blankAns":"treats her old colleagues like dirt","exZh":"她升职后对老同事很不尊重。"},{"deck":"Unit 5: Relationships","id":"your_own_flesh_and_blood","idiom":"your own flesh and blood","en":"a member of your family","zh":"亲骨肉；家人","ex":"I can't believe he'd steal from me — he's ___.","blankAns":"my own flesh and blood","exZh":"我不敢相信他会偷我钱——他可是我的亲骨肉啊。"},{"deck":"Unit 6: Help and Encouragement","id":"bend_over_backwards","idiom":"bend over backwards / bend over backward","en":"to try very hard to help someone","zh":"竭尽全力；拼命帮忙","ex":"The staff ___ to make our stay pleasant.","blankAns":"bent over backwards","exZh":"员工竭尽全力让我们的住宿舒适。"},{"deck":"Unit 6: Help and Encouragement","id":"be_there_for_someone","idiom":"be there for someone","en":"to support someone when they need you","zh":"支持某人；做某人的依靠","ex":"I knew I could count on her; she always ___.","blankAns":"is there for me","exZh":"我知道我可以依靠她；她总是在我身边。"},{"deck":"Unit 6: Help and Encouragement","id":"give_and_take","idiom":"give and take","en":"willingness to compromise and accept each other's needs","zh":"互相让步；有商有量","ex":"A good relationship requires plenty of ___.","blankAns":"give and take","exZh":"一段好的关系需要彼此互相迁就。"},{"deck":"Unit 6: Help and Encouragement","id":"hold_someones_hand","idiom":"hold someone's hand","en":"to help and support someone through a difficult situation","zh":"手把手帮助；悉心扶持","ex":"The new software is easy; you won't need anyone to ___.","blankAns":"hold your hand","exZh":"这个新软件很简单，你不需要人手把手教。"},{"deck":"Unit 6: Help and Encouragement","id":"in_the_same_boat","idiom":"in the same boat","en":"in the same difficult situation as others","zh":"同病相怜；处境相同","ex":"We're all ___ — none of us has finished the report.","blankAns":"in the same boat","exZh":"我们彼此彼此——报告都还没完成。"},{"deck":"Unit 6: Help and Encouragement","id":"keep_your_chin_up","idiom":"keep your chin up","en":"to stay cheerful during a difficult time","zh":"别气馁；打起精神","ex":"I know it's tough, but ___ — things will get better.","blankAns":"keep your chin up","exZh":"我知道很难，但打起精神来——会好起来的。"},{"deck":"Unit 6: Help and Encouragement","id":"lend_a_hand","idiom":"lend a hand / lend someone a hand","en":"to help someone do something","zh":"帮忙；助一臂之力","ex":"Could you ___ with these boxes?","blankAns":"lend a hand","exZh":"你能帮忙搬一下这些箱子吗？"},{"deck":"Unit 6: Help and Encouragement","id":"look_the_other_way","idiom":"look the other way","en":"to deliberately ignore something wrong","zh":"假装没看见；睁一只眼闭一只眼","ex":"The guard ___ and let them sneak in.","blankAns":"looked the other way","exZh":"警卫假装没看见，让他们溜进去了。"},{"deck":"Unit 6: Help and Encouragement","id":"meet_someone_halfway","idiom":"meet someone halfway","en":"to compromise by accepting some of their demands","zh":"各让一步；妥协","ex":"They wanted $500, but I managed to ___ at $350.","blankAns":"meet them halfway","exZh":"他们想要500美元，但我设法以350美元各让一步成交了。"},{"deck":"Unit 6: Help and Encouragement","id":"a_pat_on_the_back","idiom":"a pat on the back","en":"praise for something done well","zh":"表扬；鼓励","ex":"You deserve ___ for finishing so quickly.","blankAns":"a pat on the back","exZh":"你这么快就完成了，值得表扬。"},{"deck":"Unit 6: Help and Encouragement","id":"put_your_heads_together","idiom":"put your heads together","en":"to work together to solve a problem","zh":"集思广益；一起商量","ex":"If we ___, we might find a solution.","blankAns":"put our heads together","exZh":"我们集思广益，也许能找到解决办法。"},{"deck":"Unit 6: Help and Encouragement","id":"sing_someones_praises","idiom":"sing someone's praises","en":"to praise someone enthusiastically","zh":"高度赞扬；唱赞歌","ex":"The manager ___ about her work ethic.","blankAns":"sang her praises","exZh":"经理对她的敬业精神赞不绝口。"},{"deck":"Unit 6: Help and Encouragement","id":"take_someone_under_your_wing","idiom":"take someone under your wing","en":"to protect and guide someone","zh":"庇护；收为羽翼","ex":"The senior officer ___ and taught her everything.","blankAns":"took her under his wing","exZh":"那位资深警官收她为徒，把所有东西都教给了她。"},{"deck":"Unit 6: Help and Encouragement","id":"a_tower_of_strength","idiom":"a tower of strength / a pillar of strength","en":"someone who gives strong support","zh":"精神支柱；坚强的后盾","ex":"During her illness, her husband was ___.","blankAns":"a tower of strength","exZh":"她生病期间，丈夫是她的坚强后盾。"},{"deck":"Unit 7: Involvement and Interest","id":"not_be_your_cup_of_tea","idiom":"not be your cup of tea","en":"not be something you like or enjoy","zh":"不合口味；不感兴趣","ex":"Heavy metal music isn't really ___.","blankAns":"my cup of tea","exZh":"重金属音乐不太合我的口味。"},{"deck":"Unit 7: Involvement and Interest","id":"have_an_axe_to_grind","idiom":"have an axe to grind","en":"to have a personal reason for being involved","zh":"别有用心；有私心","ex":"He keeps criticising the policy; I think he ___.","blankAns":"has an axe to grind","exZh":"他一直批评这个政策，我觉得他别有用心。"},{"deck":"Unit 7: Involvement and Interest","id":"in_the_picture","idiom":"in the picture","en":"involved in a situation","zh":"参与其中；在局内","ex":"We need someone who is ___ to give an accurate account.","blankAns":"in the picture","exZh":"我们需要一个局内人来准确描述情况。"},{"deck":"Unit 7: Involvement and Interest","id":"jump_on_the_bandwagon","idiom":"jump on the bandwagon","en":"to join a popular activity or trend","zh":"赶时髦；随大流","ex":"All these companies are ___ with AI tools.","blankAns":"jumping on the bandwagon","exZh":"所有这些公司都在跟风使用人工智能工具。"},{"deck":"Unit 7: Involvement and Interest","id":"keep_a_low_profile","idiom":"keep a low profile","en":"to avoid attracting attention","zh":"保持低调；不引人注意","ex":"After the scandal, he tried to ___.","blankAns":"keep a low profile","exZh":"丑闻之后，他尽量保持低调。"},{"deck":"Unit 7: Involvement and Interest","id":"a_labour_of_love","idiom":"a labour of love","en":"a task done for pleasure, not reward","zh":"心甘情愿做的事；出于热爱的工作","ex":"Restoring the old car was ___.","blankAns":"a labour of love","exZh":"修复那辆老爷车是出于爱好。"},{"deck":"Unit 7: Involvement and Interest","id":"mean_business","idiom":"mean business","en":"to be serious and determined","zh":"当真；是认真的","ex":"He's hired a lawyer, so he obviously ___.","blankAns":"means business","exZh":"他请了律师，显然他是认真的。"},{"deck":"Unit 7: Involvement and Interest","id":"a_nosey_parker","idiom":"a nosey parker","en":"someone who interferes in other people's business","zh":"好管闲事的人；包打听","ex":"Our neighbour is such ___; she always asks personal questions.","blankAns":"a nosey parker","exZh":"我们邻居好管闲事，总爱问私人问题。"},{"deck":"Unit 7: Involvement and Interest","id":"poke_your_nose_into_something","idiom":"poke your nose into something / stick your nose into something","en":"to interfere in something that does not concern you","zh":"管闲事；插手","ex":"Don't ___ my private life.","blankAns":"poke your nose into","exZh":"别插手我的私生活。"},{"deck":"Unit 7: Involvement and Interest","id":"steer_clear_of_something","idiom":"steer clear of something","en":"to avoid someone or something completely","zh":"躲开；避开","ex":"I try to ___ office politics.","blankAns":"steer clear of","exZh":"我尽量避开办公室政治。"},{"deck":"Unit 7: Involvement and Interest","id":"try_your_hand_at_something","idiom":"try your hand at something","en":"to attempt doing something new","zh":"尝试做某事","ex":"I'm going to ___ painting this weekend.","blankAns":"try my hand at","exZh":"这个周末我打算尝试一下画画。"},{"deck":"Unit 7: Involvement and Interest","id":"up_to_your_ears","idiom":"up to your ears","en":"very busy or deeply involved in something","zh":"忙得不可开交；深陷其中","ex":"I'm ___ in paperwork at the moment.","blankAns":"up to my ears","exZh":"我现在忙得淹没在文书工作里了。"},{"deck":"Unit 7: Involvement and Interest","id":"whet_someones_appetite","idiom":"whet someone's appetite","en":"to make someone want something more","zh":"吊胃口；激发兴趣","ex":"The trailer ___ for the new movie.","blankAns":"whetted my appetite","exZh":"预告片吊起了我对这部新电影的胃口。"},{"deck":"Unit 7: Involvement and Interest","id":"your_heart_isnt_in_something","idiom":"your heart isn't in something","en":"you lack enthusiasm for what you are doing","zh":"心不在焉；不热衷","ex":"She's still studying law but ___ it anymore.","blankAns":"her heart isn't in","exZh":"她还在学法律，但已经心不在此了。"},{"deck":"Unit 8: Starting and Stopping","id":"call_it_a_day","idiom":"call it a day","en":"to stop working for the day","zh":"收工；今天就到这儿","ex":"We've done enough – let's ___.","blankAns":"call it a day","exZh":"我们做得够多了——今天到此为止吧。"},{"deck":"Unit 8: Starting and Stopping","id":"call_it_quits","idiom":"call it quits","en":"to stop doing something or being involved","zh":"放弃；结束","ex":"After ten years of running the shop, they decided to ___.","blankAns":"call it quits","exZh":"经营这家店十年后，他们决定不干了。"},{"deck":"Unit 8: Starting and Stopping","id":"cut_your_losses","idiom":"cut your losses","en":"to stop an activity that is failing","zh":"及时止损","ex":"The project was going nowhere, so we decided to ___.","blankAns":"cut our losses","exZh":"项目毫无进展，我们决定及时止损。"},{"deck":"Unit 8: Starting and Stopping","id":"enough_is_enough","idiom":"enough is enough","en":"something should stop because it's too much","zh":"够了；适可而止","ex":"I've put up with the noise for weeks. ___!","blankAns":"Enough is enough","exZh":"我已经忍受噪音好几个星期了。够了！"},{"deck":"Unit 8: Starting and Stopping","id":"from_scratch","idiom":"from scratch","en":"from the very beginning, without using anything existing","zh":"从头开始；白手起家","ex":"She built the business ___.","blankAns":"from scratch","exZh":"她白手起家创办了这个企业。"},{"deck":"Unit 8: Starting and Stopping","id":"grind_to_a_halt","idiom":"grind to a halt","en":"to gradually slow down and stop","zh":"慢慢停滞下来","ex":"Traffic ___ because of the snow.","blankAns":"ground to a halt","exZh":"由于大雪，交通慢慢瘫痪了。"},{"deck":"Unit 8: Starting and Stopping","id":"hit_the_ground_running","idiom":"hit the ground running","en":"to start a new activity with great energy","zh":"立即全力以赴；迅速上手","ex":"The new manager ___ and introduced changes immediately.","blankAns":"hit the ground running","exZh":"新经理迅速上手，马上就推出了改革措施。"},{"deck":"Unit 8: Starting and Stopping","id":"in_business","idiom":"in business","en":"ready to start because everything is prepared","zh":"可以开始了；万事俱备","ex":"We've got the funding – now we're ___!","blankAns":"in business","exZh":"我们拿到了资金，现在可以开始干了！"},{"deck":"Unit 8: Starting and Stopping","id":"knock_something_on_the_head","idiom":"knock something on the head","en":"to stop an activity or prove an idea wrong","zh":"停止；推翻","ex":"The rumours were ___ by the official statement.","blankAns":"knocked on the head","exZh":"官方声明推翻了那些谣言。"},{"deck":"Unit 8: Starting and Stopping","id":"nip_something_in_the_bud","idiom":"nip something in the bud","en":"to stop a problem at an early stage","zh":"防患于未然；把…扼杀在萌芽状态","ex":"I want to ___ before it becomes a major issue.","blankAns":"nip this in the bud","exZh":"我想在事情变大之前把它扼杀在萌芽状态。"},{"deck":"Unit 8: Starting and Stopping","id":"set_the_ball_rolling","idiom":"set the ball rolling / start the ball rolling","en":"to start an activity or process","zh":"启动；开个头","ex":"I'll donate the first $100 to ___.","blankAns":"start the ball rolling","exZh":"我来捐第一个100美元开个头。"},{"deck":"Unit 8: Starting and Stopping","id":"turn_over_a_new_leaf","idiom":"turn over a new leaf","en":"to start behaving in a better way","zh":"翻开新的一页；改过自新","ex":"He promised to ___ and stop gambling.","blankAns":"turn over a new leaf","exZh":"他保证改过自新，不再赌博。"},{"deck":"Unit 8: Starting and Stopping","id":"up_and_running","idiom":"up and running","en":"operating and functioning successfully","zh":"投入使用；运转正常","ex":"The new website is finally ___.","blankAns":"up and running","exZh":"新网站终于上线运行了。"},{"deck":"Unit 9: Effort","id":"break_your_back","idiom":"break your back","en":"to work extremely hard","zh":"拼命干；累断腰","ex":"I've been ___ to finish this report on time.","blankAns":"breaking my back","exZh":"我为了按时完成这份报告拼了老命。"},{"deck":"Unit 9: Effort","id":"burn_the_candle_at_both_ends","idiom":"burn the candle at both ends","en":"to exhaust yourself by working or staying up late","zh":"过度劳累；日夜操劳","ex":"You're ___ by working two jobs and studying.","blankAns":"burning the candle at both ends","exZh":"你打两份工又学习，真是体力透支。"},{"deck":"Unit 9: Effort","id":"cut_corners","idiom":"cut corners","en":"to do something cheaply or quickly, ignoring proper procedure","zh":"偷工减料；走捷径","ex":"They ___ on safety, and now there's an accident.","blankAns":"cut corners","exZh":"他们在安全上偷工减料，现在出事故了。"},{"deck":"Unit 9: Effort","id":"not_do_things_by_halves","idiom":"not do things by halves","en":"to always do things thoroughly or to an extreme","zh":"做事从不半途而废；要做就做彻底","ex":"She doesn't ___: if she learns a language, she moves to the country.","blankAns":"do things by halves","exZh":"她做事从不半吊子；学一门语言，她就会搬去那个国家。"},{"deck":"Unit 9: Effort","id":"do_your_level_best","idiom":"do your level best","en":"to try as hard as you can","zh":"竭尽全力","ex":"I'll ___ to be there on time, but the traffic is terrible.","blankAns":"do my level best","exZh":"我会尽量准时到，但交通实在太堵了。"},{"deck":"Unit 9: Effort","id":"go_all_out","idiom":"go all out","en":"to put all your effort into achieving something","zh":"全力以赴；豁出去","ex":"They're ___ for the championship this year.","blankAns":"going all out","exZh":"今年他们为了冠军全力以赴。"},{"deck":"Unit 9: Effort","id":"go_the_extra_mile","idiom":"go the extra mile","en":"to make a special effort beyond what is required","zh":"加倍努力；多走一步","ex":"Customer service is great – they always ___.","blankAns":"go the extra mile","exZh":"客户服务很棒——他们总是想方设法做得更多。"},{"deck":"Unit 9: Effort","id":"land_on_your_feet","idiom":"land on your feet / fall on your feet","en":"to be lucky and end up in a good situation","zh":"走运；逢凶化吉","ex":"He lost one job but immediately found a better one; he always ___.","blankAns":"lands on his feet","exZh":"他丢了一份工作但马上找到了更好的，他总是那么走运。"},{"deck":"Unit 9: Effort","id":"not_lift_a_finger","idiom":"not lift a finger / not raise a finger","en":"to do nothing to help","zh":"一点忙也不帮；袖手旁观","ex":"He ___ to help with the housework.","blankAns":"doesn't lift a finger","exZh":"他连家务活的一根手指都不动。"},{"deck":"Unit 9: Effort","id":"make_a_meal_of_something","idiom":"make a meal of something / make a meal out of something","en":"to spend too much time or effort on something","zh":"小题大做；过分讲究","ex":"It's just a simple form – don't ___.","blankAns":"make a meal of it","exZh":"不过是一张简单的表格——别弄得太复杂。"},{"deck":"Unit 9: Effort","id":"pull_your_socks_up","idiom":"pull your socks up","en":"to improve your performance or behaviour","zh":"振作起来；加把劲","ex":"You need to ___ if you want to pass the exam.","blankAns":"pull your socks up","exZh":"如果你想通过考试，就得加把劲了。"},{"deck":"Unit 9: Effort","id":"pull_your_weight","idiom":"pull your weight","en":"to do your fair share of work","zh":"尽本分；做好份内事","ex":"Everyone must ___ or the project will fail.","blankAns":"pull their weight","exZh":"每个人都得尽力，否则项目就会失败。"},{"deck":"Unit 9: Effort","id":"work_your_fingers_to_the_bone","idiom":"work your fingers to the bone","en":"to work extremely hard for a long time","zh":"拼命工作；累死累活","ex":"She ___ to provide for her children.","blankAns":"worked her fingers to the bone","exZh":"她为了养家糊口拼命干活。"},{"deck":"Unit 9: Effort","id":"work_your_socks_off","idiom":"work your socks off","en":"to work extremely hard","zh":"拼命工作；忙得四脚朝天","ex":"We ___ to meet the deadline.","blankAns":"worked our socks off","exZh":"我们为了赶上截止日期忙得不可开交。"},{"deck":"Unit 10: Honesty and Fairness","id":"above_board","idiom":"above board","en":"honest and legal","zh":"光明正大；合法合规","ex":"The deal was completely ___.","blankAns":"above board","exZh":"这笔交易完全光明正大。"},{"deck":"Unit 10: Honesty and Fairness","id":"not_beat_around_the_bush","idiom":"not beat around the bush / not beat about the bush","en":"to speak directly, without avoiding the subject","zh":"不拐弯抹角；开门见山","ex":"Let's ___ – your plan won't work.","blankAns":"not beat around the bush","exZh":"我们别拐弯抹角了——你的计划行不通。"},{"deck":"Unit 10: Honesty and Fairness","id":"below_the_belt","idiom":"below the belt","en":"cruel and unfair","zh":"不公正的；卑劣的","ex":"Bringing up his divorce was ___.","blankAns":"below the belt","exZh":"提起他离婚的事太卑劣了。"},{"deck":"Unit 10: Honesty and Fairness","id":"by_fair_means_or_foul","idiom":"by fair means or foul","en":"using any method, even dishonest ones","zh":"不择手段","ex":"He was determined to win, ___.","blankAns":"by fair means or foul","exZh":"他决心要赢，哪怕不择手段。"},{"deck":"Unit 10: Honesty and Fairness","id":"call_a_spade_a_spade","idiom":"call a spade a spade","en":"to speak honestly and directly, even if it offends","zh":"直言不讳；实话实说","ex":"I respect her because she always ___.","blankAns":"calls a spade a spade","exZh":"我尊敬她，因为她总是实话实说。"},{"deck":"Unit 10: Honesty and Fairness","id":"come_clean","idiom":"come clean","en":"to admit the truth about something","zh":"坦白；老实交代","ex":"He finally ___ about his criminal past.","blankAns":"came clean","exZh":"他终于坦白了犯罪前科。"},{"deck":"Unit 10: Honesty and Fairness","id":"fair_and_square","idiom":"fair and square","en":"in an honest and straightforward way","zh":"光明磊落地；正大光明地","ex":"We won the game ___.","blankAns":"fair and square","exZh":"我们光明正大地赢了比赛。"},{"deck":"Unit 10: Honesty and Fairness","id":"keep_your_nose_clean","idiom":"keep your nose clean","en":"to stay out of trouble","zh":"安分守己；不惹麻烦","ex":"If you ___, you'll be fine.","blankAns":"keep your nose clean","exZh":"只要安分守己就没事。"},{"deck":"Unit 10: Honesty and Fairness","id":"lay_your_cards_on_the_table","idiom":"lay your cards on the table / put your cards on the table","en":"to be completely open and honest about your intentions","zh":"摊牌；亮底牌","ex":"I think we need to ___ about our budget.","blankAns":"lay our cards on the table","exZh":"我认为我们需要在预算问题上摊开来说。"},{"deck":"Unit 10: Honesty and Fairness","id":"a_level_playing_field","idiom":"a level playing field","en":"a situation where everyone has the same opportunities","zh":"公平的竞争环境","ex":"New regulations should create ___ for all companies.","blankAns":"a level playing field","exZh":"新法规应该会为所有公司创造一个公平的竞争环境。"},{"deck":"Unit 10: Honesty and Fairness","id":"move_the_goalposts","idiom":"move the goalposts","en":"to change the rules or conditions unfairly","zh":"改变规则；搬弄标准","ex":"They keep ___ so we can never meet the targets.","blankAns":"moving the goalposts","exZh":"他们不停地改变目标，我们永远达不到。"},{"deck":"Unit 10: Honesty and Fairness","id":"on_the_level","idiom":"on the level","en":"honest; genuine","zh":"诚实的；真的","ex":"Is this offer ___?","blankAns":"on the level","exZh":"这个报价是真的吗？"},{"deck":"Unit 10: Honesty and Fairness","id":"stab_someone_in_the_back","idiom":"stab someone in the back","en":"to betray someone who trusts you","zh":"背后捅刀子；背叛","ex":"He ___ by telling the boss about my mistake.","blankAns":"stabbed me in the back","exZh":"他背后捅我刀子，把我的错误告诉了老板。"},{"deck":"Unit 10: Honesty and Fairness","id":"to_someones_face","idiom":"to someone's face","en":"directly to someone, openly","zh":"当面；当着某人的面","ex":"If you have a problem, say it ___.","blankAns":"to my face","exZh":"你有问题就当面说。"},{"deck":"Unit 11: Deception","id":"blow_the_whistle_on_someone","idiom":"blow the whistle on someone/something","en":"to report illegal or dishonest activity","zh":"检举；揭发","ex":"An employee ___ the company's tax fraud.","blankAns":"blew the whistle on","exZh":"一名员工揭发了公司的税务欺诈。"},{"deck":"Unit 11: Deception","id":"cover_your_tracks","idiom":"cover your tracks","en":"to hide evidence of what you have done","zh":"掩盖行踪；毁灭证据","ex":"He tried to ___ by deleting all the emails.","blankAns":"cover his tracks","exZh":"他删除了所有邮件试图掩盖痕迹。"},{"deck":"Unit 11: Deception","id":"be_economical_with_the_truth","idiom":"be economical with the truth","en":"to not tell the whole truth; to deceive by omission","zh":"有所隐瞒；没完全说实话","ex":"He was ___ about his qualifications.","blankAns":"economical with the truth","exZh":"他对自己的资历没有完全说实话。"},{"deck":"Unit 11: Deception","id":"give_the_game_away","idiom":"give the game away","en":"to reveal a secret unintentionally","zh":"露馅；泄露天机","ex":"His smile ___ that he knew about the surprise.","blankAns":"gave the game away","exZh":"他的笑容暴露了他是知道这个惊喜的。"},{"deck":"Unit 11: Deception","id":"go_behind_someones_back","idiom":"go behind someone's back","en":"to do something secretly without someone's knowledge","zh":"背着某人行事；搞小动作","ex":"She ___ and signed the contract without telling me.","blankAns":"went behind my back","exZh":"她背着我在没有告诉我的情况下签了合同。"},{"deck":"Unit 11: Deception","id":"go_through_the_motions","idiom":"go through the motions","en":"to do something without real effort or enthusiasm","zh":"敷衍了事；做样子","ex":"He's just ___ at work these days.","blankAns":"going through the motions","exZh":"他这些天上班只是在敷衍应付。"},{"deck":"Unit 11: Deception","id":"a_hidden_agenda","idiom":"a hidden agenda","en":"a secret reason for doing something","zh":"隐藏的意图；不可告人的目的","ex":"I suspect he has ___.","blankAns":"a hidden agenda","exZh":"我怀疑他有不可告人的目的。"},{"deck":"Unit 11: Deception","id":"keep_something_under_your_hat","idiom":"keep something under your hat","en":"to keep something secret","zh":"保守秘密；不声张","ex":"Keep it ___ for now – it's a surprise.","blankAns":"under your hat","exZh":"暂时保密——这是个惊喜。"},{"deck":"Unit 11: Deception","id":"lead_someone_up_the_garden_path","idiom":"lead someone up the garden path","en":"to deceive someone, especially by making false promises","zh":"欺骗；误导","ex":"He ___ with promises of promotion, but it never happened.","blankAns":"led her up the garden path","exZh":"他用升职的承诺骗她，结果根本没影。"},{"deck":"Unit 11: Deception","id":"lie_through_your_teeth","idiom":"lie through your teeth","en":"to tell a deliberate, obvious lie","zh":"睁眼说瞎话；满口谎言","ex":"He was ___ when he said he didn't know about it.","blankAns":"lying through his teeth","exZh":"他说不知道这事是在睁眼说瞎话。"},{"deck":"Unit 11: Deception","id":"on_the_fiddle","idiom":"on the fiddle","en":"obtaining money dishonestly","zh":"诈骗；捞黑钱","ex":"He was caught ___ with his expenses.","blankAns":"on the fiddle","exZh":"他被发现虚报开支骗钱。"},{"deck":"Unit 11: Deception","id":"pull_someones_leg","idiom":"pull someone's leg","en":"to tease someone playfully by telling a lie","zh":"开玩笑；逗某人","ex":"Don't worry, I'm just ___ – I'm not really quitting.","blankAns":"pulling your leg","exZh":"别担心，我逗你玩的——我不是真的要辞职。"},{"deck":"Unit 11: Deception","id":"sweep_something_under_the_carpet","idiom":"sweep something under the carpet","en":"to hide a problem instead of dealing with it","zh":"掩盖问题；隐瞒","ex":"The company tried to ___ the safety issues.","blankAns":"sweep under the carpet","exZh":"公司试图掩盖安全问题。"},{"deck":"Unit 11: Deception","id":"a_white_lie","idiom":"a white lie","en":"a harmless lie told to avoid hurting someone","zh":"善意的谎言","ex":"I told her I liked the gift – just ___.","blankAns":"a white lie","exZh":"我告诉她我喜欢那份礼物——只是个善意的谎言。"},{"deck":"Unit 12: Anger and Irritation","id":"bite_someones_head_off","idiom":"bite someone's head off / snap someone's head off","en":"to speak to someone in an angry, aggressive way","zh":"对某人怒吼；把某人骂得狗血淋头","ex":"I just asked a simple question and she ___.","blankAns":"bit my head off","exZh":"我只是问了个简单的问题，她就对我大发雷霆。"},{"deck":"Unit 12: Anger and Irritation","id":"blow_a_fuse","idiom":"blow a fuse","en":"to suddenly lose your temper","zh":"勃然大怒；暴跳如雷","ex":"Dad ___ when he saw the broken window.","blankAns":"blew a fuse","exZh":"爸爸看到打碎的窗户时暴跳如雷。"},{"deck":"Unit 12: Anger and Irritation","id":"a_dirty_look","idiom":"a dirty look / a filthy look","en":"an angry or disapproving expression","zh":"愤怒的脸色；白眼","ex":"She gave me ___ when I interrupted.","blankAns":"a dirty look","exZh":"我插嘴时她狠狠瞪了我一眼。"},{"deck":"Unit 12: Anger and Irritation","id":"drive_someone_up_the_wall","idiom":"drive someone up the wall","en":"to annoy someone very much","zh":"把某人逼疯；使极其恼怒","ex":"That constant buzzing noise ___.","blankAns":"is driving me up the wall","exZh":"那持续不断的嗡嗡声要把我逼疯了。"},{"deck":"Unit 12: Anger and Irritation","id":"a_face_like_thunder","idiom":"a face like thunder","en":"to look extremely angry","zh":"脸色阴沉；满脸怒气","ex":"He walked in with ___.","blankAns":"a face like thunder","exZh":"他满脸怒气地走了进来。"},{"deck":"Unit 12: Anger and Irritation","id":"fly_off_the_handle","idiom":"fly off the handle","en":"to suddenly become very angry","zh":"突然发火；大发脾气","ex":"He ___ over a minor mistake.","blankAns":"flew off the handle","exZh":"他为一个小错误大发脾气。"},{"deck":"Unit 12: Anger and Irritation","id":"give_someone_hell","idiom":"give someone hell","en":"to shout at someone angrily or make their life difficult","zh":"痛骂某人；让某人不好过","ex":"My boss ___ for being late again.","blankAns":"gave me hell","exZh":"我因为再次迟到被老板骂得狗血淋头。"},{"deck":"Unit 12: Anger and Irritation","id":"go_through_the_roof","idiom":"go through the roof / hit the roof","en":"to suddenly become extremely angry","zh":"怒火冲天；暴怒","ex":"She ___ when she saw the phone bill.","blankAns":"went through the roof","exZh":"她看到电话账单时火冒三丈。"},{"deck":"Unit 12: Anger and Irritation","id":"have_a_chip_on_your_shoulder","idiom":"have a chip on your shoulder","en":"to feel angry and resentful because of a perceived injustice","zh":"怀恨在心；忿忿不平","ex":"He's always ___ about not getting promoted.","blankAns":"had a chip on his shoulder","exZh":"他一直为没升职的事忿忿不平。"},{"deck":"Unit 12: Anger and Irritation","id":"have_a_fit","idiom":"have a fit / throw a fit","en":"to become very angry and upset","zh":"大发雷霆；暴跳如雷","ex":"My parents ___ when I came home at 3 a.m.","blankAns":"threw a fit","exZh":"我凌晨三点回家时父母大发雷霆。"},{"deck":"Unit 12: Anger and Irritation","id":"lose_it","idiom":"lose it","en":"to become extremely angry or upset","zh":"情绪失控；大发脾气","ex":"I just ___ and started shouting.","blankAns":"lost it","exZh":"我当场失控，大喊了起来。"},{"deck":"Unit 12: Anger and Irritation","id":"make_your_blood_boil","idiom":"make your blood boil","en":"to make you extremely angry","zh":"令人火冒三丈","ex":"Injustice always ___.","blankAns":"makes my blood boil","exZh":"不公正的事总是让我火冒三丈。"},{"deck":"Unit 12: Anger and Irritation","id":"a_pain_in_the_neck","idiom":"a pain in the neck","en":"someone or something very annoying","zh":"讨厌鬼；烦人的事","ex":"Filling out these forms is ___.","blankAns":"a pain in the neck","exZh":"填这些表格真是烦死人了。"},{"deck":"Unit 12: Anger and Irritation","id":"a_sore_point","idiom":"a sore point / a sore spot","en":"a subject that makes someone angry or upset","zh":"痛处；敏感话题","ex":"Don't mention his weight – it's ___.","blankAns":"a sore point","exZh":"别提他的体重——那是他的痛处。"},{"deck":"Unit 13: Fear and Frustration","id":"at_the_end_of_your_tether","idiom":"at the end of your tether","en":"unable to cope with a difficult situation anymore","zh":"山穷水尽；忍无可忍","ex":"After months of problems, I'm ___.","blankAns":"at the end of my tether","exZh":"经过几个月的麻烦，我已经忍无可忍了。"},{"deck":"Unit 13: Fear and Frustration","id":"a_bundle_of_nerves","idiom":"a bundle of nerves","en":"extremely nervous","zh":"紧张不安；神经紧绷","ex":"Before the speech, I was ___.","blankAns":"a bundle of nerves","exZh":"演讲前我紧张得不得了。"},{"deck":"Unit 13: Fear and Frustration","id":"butterflies_in_your_stomach","idiom":"butterflies in your stomach","en":"a nervous feeling before an important event","zh":"心里七上八下；紧张","ex":"I always get ___ before a presentation.","blankAns":"butterflies in my stomach","exZh":"我做演讲前总是心里七上八下的。"},{"deck":"Unit 13: Fear and Frustration","id":"frighten_the_life_out_of_someone","idiom":"frighten the life out of someone / scare the life out of someone","en":"to make someone extremely frightened","zh":"把某人吓得半死","ex":"The sudden noise ___.","blankAns":"frightened the life out of me","exZh":"那突如其来的声音把我吓了个半死。"},{"deck":"Unit 13: Fear and Frustration","id":"get_cold_feet","idiom":"get cold feet / have cold feet","en":"to suddenly become too nervous to do something planned","zh":"临阵退缩；打退堂鼓","ex":"He wanted to propose but ___ at the last minute.","blankAns":"got cold feet","exZh":"他本想求婚，但最后一刻临阵退缩了。"},{"deck":"Unit 13: Fear and Frustration","id":"not_get_a_word_in_edgeways","idiom":"not get a word in edgeways","en":"unable to speak because someone else is talking too much","zh":"插不上嘴","ex":"She talked so much I couldn't ___.","blankAns":"get a word in edgeways","exZh":"她话说个不停，我完全插不上嘴。"},{"deck":"Unit 13: Fear and Frustration","id":"give_someone_the_creeps","idiom":"give someone the creeps","en":"to make someone feel nervous or frightened","zh":"让人毛骨悚然","ex":"That old house ___.","blankAns":"gives me the creeps","exZh":"那栋老房子让我毛骨悚然。"},{"deck":"Unit 13: Fear and Frustration","id":"jump_out_of_your_skin","idiom":"jump out of your skin / nearly jump out of your skin","en":"to be suddenly very shocked or surprised","zh":"吓了一大跳；大吃一惊","ex":"I ___ when the door slammed.","blankAns":"nearly jumped out of my skin","exZh":"门砰地关上，我差点吓掉了魂。"},{"deck":"Unit 13: Fear and Frustration","id":"the_last_straw","idiom":"the last straw / the final straw","en":"the final problem that makes a situation unbearable","zh":"最后一根稻草；终于忍无可忍的事","ex":"When he forgot our anniversary, that was ___.","blankAns":"the last straw","exZh":"他忘记我们的结婚纪念日，那真是压垮我的最后一根稻草。"},{"deck":"Unit 13: Fear and Frustration","id":"on_edge","idiom":"on edge","en":"anxious and unable to relax","zh":"紧张不安；提心吊胆","ex":"Everyone was ___ waiting for the exam results.","blankAns":"on edge","exZh":"大家都在紧张地等待考试成绩。"},{"deck":"Unit 13: Fear and Frustration","id":"red_tape","idiom":"red tape","en":"excessive bureaucracy that causes delay","zh":"繁文缛节；官样文章","ex":"There's so much ___ involved in getting a visa.","blankAns":"red tape","exZh":"办签证要经过一大堆官僚主义的手续。"},{"deck":"Unit 13: Fear and Frustration","id":"scare_someone_out_of_their_wits","idiom":"scare someone out of their wits","en":"to make someone extremely frightened","zh":"把某人吓破胆；吓得魂飞魄散","ex":"The horror movie ___.","blankAns":"scared me out of my wits","exZh":"那部恐怖片把我吓得魂飞魄散。"},{"deck":"Unit 13: Fear and Frustration","id":"be_shaking_like_a_leaf","idiom":"be shaking like a leaf","en":"to tremble from fear or nerves","zh":"浑身发抖；抖得像筛糠","ex":"After the accident, he was ___.","blankAns":"shaking like a leaf","exZh":"事故之后，他浑身抖得像筛糠。"},{"deck":"Unit 13: Fear and Frustration","id":"until_you_are_blue_in_the_face","idiom":"until you are blue in the face","en":"no matter how much you say something, it has no effect","zh":"说得再多也白费劲","ex":"You can argue ___ but he won't change his mind.","blankAns":"until you're blue in the face","exZh":"你跟他争得面红耳赤也没用，他不会改变主意的。"},{"deck":"Unit 14: Disagreement","id":"agree_to_differ","idiom":"agree to differ / agree to disagree","en":"to stop arguing and accept different opinions","zh":"同意各自保留意见；求同存异","ex":"We couldn't convince each other, so we ___.","blankAns":"agreed to differ","exZh":"我们谁也说服不了谁，所以同意各自保留意见。"},{"deck":"Unit 14: Disagreement","id":"at_each_others_throats","idiom":"at each other's throats / at one another's throats","en":"arguing angrily with each other","zh":"激烈争吵；互相撕咬","ex":"They used to be friends but now they're ___.","blankAns":"at each other's throats","exZh":"他们以前是朋友，现在却吵得不可开交。"},{"deck":"Unit 14: Disagreement","id":"a_battle_of_wills","idiom":"a battle of wills","en":"a contest where determination decides the outcome","zh":"意志的较量","ex":"Getting the children to eat was ___.","blankAns":"a battle of wills","exZh":"让孩子们吃饭是一场意志的较量。"},{"deck":"Unit 14: Disagreement","id":"a_bone_of_contention","idiom":"a bone of contention","en":"a subject that causes disagreement","zh":"争论的焦点","ex":"The division of the inheritance was ___ for years.","blankAns":"a bone of contention","exZh":"遗产的分配多年来一直是争论的焦点。"},{"deck":"Unit 14: Disagreement","id":"clear_the_air","idiom":"clear the air","en":"to remove bad feelings between people","zh":"消除隔阂；缓和气氛","ex":"We need to talk and ___.","blankAns":"clear the air","exZh":"我们需要谈谈，消除误会。"},{"deck":"Unit 14: Disagreement","id":"cross_swords","idiom":"cross swords","en":"to argue or disagree strongly","zh":"交锋；激烈争论","ex":"I don't want to ___ with her over details.","blankAns":"cross swords","exZh":"我不想在细节上与她争执。"},{"deck":"Unit 14: Disagreement","id":"fight_like_cat_and_dog","idiom":"fight like cat and dog","en":"to argue violently very often","zh":"吵得天翻地覆；水火不容","ex":"As kids, we ___.","blankAns":"fought like cat and dog","exZh":"我们小时候老打架。"},{"deck":"Unit 14: Disagreement","id":"give_someone_a_piece_of_your_mind","idiom":"give someone a piece of your mind","en":"to speak angrily to someone about something they did","zh":"痛斥某人；当面训斥","ex":"I'm going to ___ for lying to me.","blankAns":"give him a piece of my mind","exZh":"他骗了我，我要当面训斥他。"},{"deck":"Unit 14: Disagreement","id":"have_a_bone_to_pick_with_someone","idiom":"have a bone to pick with someone","en":"to be annoyed with someone and want to discuss it","zh":"对某人有意见；要找某人算账","ex":"I ___ about the way you spoke to me earlier.","blankAns":"have a bone to pick with you","exZh":"你刚才跟我说话的态度，我要跟你谈谈。"},{"deck":"Unit 14: Disagreement","id":"have_a_go_at_someone","idiom":"have a go at someone","en":"to criticize someone strongly","zh":"指责；数落某人","ex":"My mum ___ about my messy room.","blankAns":"had a go at me","exZh":"我妈妈因为我房间乱狠狠地数落了我。"},{"deck":"Unit 14: Disagreement","id":"in_someones_bad_books","idiom":"in someone's bad books","en":"in a state of disfavour with someone","zh":"不受某人待见；让某人讨厌","ex":"I'm ___ with the boss after missing the meeting.","blankAns":"in the bad books","exZh":"我错过了会议，现在不受老板待见。"},{"deck":"Unit 14: Disagreement","id":"jump_down_someones_throat","idiom":"jump down someone's throat","en":"to react very angrily to what someone says","zh":"厉声斥责；对某人暴跳如雷","ex":"I only asked a question – no need to ___.","blankAns":"jump down my throat","exZh":"我只是问了个问题，用不着对我大动肝火。"},{"deck":"Unit 14: Disagreement","id":"kiss_and_make_up","idiom":"kiss and make up","en":"to become friends again after an argument","zh":"言归于好；和好","ex":"They argued for hours but then ___.","blankAns":"kissed and made up","exZh":"他们吵了好几个小时，然后又和好了。"},{"deck":"Unit 14: Disagreement","id":"not_see_eye_to_eye","idiom":"not see eye to eye","en":"to disagree with someone","zh":"看法不同；意见不合","ex":"We ___ on many issues, but we're still friends.","blankAns":"don't see eye to eye","exZh":"我们在很多问题上意见不合，但仍然是朋友。"},{"deck":"Unit 14: Disagreement","id":"a_shouting_match","idiom":"a shouting match","en":"an argument where people shout at each other","zh":"大声争吵；对骂","ex":"The discussion turned into ___.","blankAns":"a shouting match","exZh":"讨论演变成了一场大声争吵。"},{"deck":"Unit 15: Success and Failure","id":"back_to_the_drawing_board","idiom":"back to the drawing board","en":"having to start again because a plan failed","zh":"从头再来；回到起点","ex":"The prototype didn't work, so it's ___.","blankAns":"back to the drawing board","exZh":"原型失败了，只好从头再来。"},{"deck":"Unit 15: Success and Failure","id":"bring_the_house_down","idiom":"bring the house down","en":"to make an audience applaud and cheer loudly","zh":"博得满堂彩；引起哄堂大笑","ex":"The final song ___.","blankAns":"brought the house down","exZh":"最后一首歌博得了满堂喝彩。"},{"deck":"Unit 15: Success and Failure","id":"come_up_in_the_world","idiom":"come up in the world","en":"to become richer or more successful","zh":"飞黄腾达；出人头地","ex":"She's really ___ since she started her own business.","blankAns":"come up in the world","exZh":"自从自己创业后，她真是飞黄腾达了。"},{"deck":"Unit 15: Success and Failure","id":"fall_flat_on_your_face","idiom":"fall flat on your face","en":"to fail embarrassingly","zh":"惨败；出丑","ex":"He tried to show off but ___.","blankAns":"fell flat on his face","exZh":"他想炫耀，结果当众出了丑。"},{"deck":"Unit 15: Success and Failure","id":"be_fighting_a_losing_battle","idiom":"be fighting a losing battle","en":"to try to achieve something unlikely to succeed","zh":"打一场必败之仗；徒劳无功","ex":"Trying to convince him is ___.","blankAns":"fighting a losing battle","exZh":"想说服他简直是白费力气。"},{"deck":"Unit 15: Success and Failure","id":"go_belly_up","idiom":"go belly-up","en":"to fail completely, especially financially","zh":"破产；倒闭","ex":"Many small businesses ___ during the recession.","blankAns":"went belly-up","exZh":"经济衰退期间许多小企业倒闭了。"},{"deck":"Unit 15: Success and Failure","id":"go_pear_shaped","idiom":"go pear-shaped","en":"to go wrong; to fail","zh":"搞砸了；出岔子","ex":"Everything was fine until the weather ___.","blankAns":"went pear-shaped","exZh":"本来一切顺利，后来天气坏了一切都搞砸了。"},{"deck":"Unit 15: Success and Failure","id":"hit_the_nail_on_the_head","idiom":"hit the nail on the head","en":"to describe exactly what is causing a situation","zh":"说到点子上；一针见血","ex":"You ___ – that's exactly the problem.","blankAns":"hit the nail on the head","exZh":"你说到点子上了——那就是问题所在。"},{"deck":"Unit 15: Success and Failure","id":"plain_sailing","idiom":"plain sailing","en":"easy and without problems","zh":"一帆风顺；轻而易举","ex":"Once we got the funding, it was ___.","blankAns":"plain sailing","exZh":"我们拿到资金后就一帆风顺了。"},{"deck":"Unit 15: Success and Failure","id":"save_the_day","idiom":"save the day","en":"to prevent a situation from becoming a disaster","zh":"扭转败局；挽救局面","ex":"Her quick thinking ___.","blankAns":"saved the day","exZh":"她的急智扭转了局面。"},{"deck":"Unit 15: Success and Failure","id":"touch_and_go","idiom":"touch and go","en":"uncertain whether the result will be good or bad","zh":"情况危急；结果难料","ex":"It was ___ for a while, but she's recovering now.","blankAns":"touch and go","exZh":"有一阵子情况很危险，不过她现在正在康复。"},{"deck":"Unit 15: Success and Failure","id":"win_hands_down","idiom":"win hands down","en":"to win easily","zh":"轻易获胜；稳操胜券","ex":"They ___ – the other team didn't stand a chance.","blankAns":"won hands down","exZh":"他们轻松获胜——另一队根本没有机会。"},{"deck":"Unit 15: Success and Failure","id":"with_flying_colours","idiom":"with flying colours","en":"with great success","zh":"出色地；成绩优异","ex":"She passed the exam ___.","blankAns":"with flying colours","exZh":"她以优异成绩通过了考试。"},{"deck":"Unit 15: Success and Failure","id":"work_like_a_charm","idiom":"work like a charm","en":"to be very effective","zh":"效果奇佳；立竿见影","ex":"The new marketing strategy ___.","blankAns":"worked like a charm","exZh":"新的营销策略效果奇佳。"},{"deck":"Unit 16: Progress","id":"be_barking_up_the_wrong_tree","idiom":"be barking up the wrong tree","en":"to be pursuing a mistaken line of thought","zh":"找错对象；白费力气","ex":"If you think I stole your pen, you're ___.","blankAns":"barking up the wrong tree","exZh":"如果你认为我偷了你的笔，那你找错人了。"},{"deck":"Unit 16: Progress","id":"be_flogging_a_dead_horse","idiom":"be flogging a dead horse","en":"to waste time on something impossible","zh":"做无用功；徒劳无益","ex":"Trying to get him to change is ___.","blankAns":"flogging a dead horse","exZh":"想让他改变简直是白费力气。"},{"deck":"Unit 16: Progress","id":"gain_ground","idiom":"gain ground","en":"to make progress or become more popular","zh":"取得进展；普及","ex":"The idea of remote work is ___.","blankAns":"gaining ground","exZh":"远程工作的理念越来越普及了。"},{"deck":"Unit 16: Progress","id":"get_to_grips_with_something","idiom":"get to grips with something / come to grips with something","en":"to start to understand and deal with something properly","zh":"认真应对；掌握","ex":"It took me a while to ___ the new software.","blankAns":"get to grips with","exZh":"我花了一段时间才掌握这款新软件。"},{"deck":"Unit 16: Progress","id":"get_your_act_together","idiom":"get your act together","en":"to organise yourself and start doing things effectively","zh":"振作起来；安排妥当","ex":"You need to ___ or you'll fail the course.","blankAns":"get your act together","exZh":"你得打起精神来，不然这门课会挂掉。"},{"deck":"Unit 16: Progress","id":"go_around_in_circles","idiom":"go around in circles / go round in circles","en":"to discuss something repeatedly without progress","zh":"原地打转；毫无进展","ex":"We've been ___ for an hour without reaching a decision.","blankAns":"going around in circles","exZh":"我们讨论了一个小时还在原地打转，没做出决定。"},{"deck":"Unit 16: Progress","id":"in_the_doldrums","idiom":"in the doldrums","en":"in a state of stagnation or low activity","zh":"不景气；消沉","ex":"The economy has been ___ for months.","blankAns":"in the doldrums","exZh":"经济几个月来一直低迷不振。"},{"deck":"Unit 16: Progress","id":"in_the_pipeline","idiom":"in the pipeline","en":"being planned or developed","zh":"在筹备中；在进行中","ex":"There are several new products ___.","blankAns":"in the pipeline","exZh":"有几款新产品正在筹备中。"},{"deck":"Unit 16: Progress","id":"light_at_the_end_of_the_tunnel","idiom":"light at the end of the tunnel","en":"hope after a difficult period","zh":"隧道尽头的亮光；希望的曙光","ex":"After years of treatment, we finally see ___.","blankAns":"light at the end of the tunnel","exZh":"经过多年治疗，我们终于看到了希望的曙光。"},{"deck":"Unit 16: Progress","id":"make_headway","idiom":"make headway","en":"to make progress, especially when it is difficult","zh":"取得进展","ex":"We're finally ___ on the project.","blankAns":"making headway","exZh":"我们终于在这个项目上取得进展了。"},{"deck":"Unit 16: Progress","id":"on_a_roll","idiom":"on a roll","en":"experiencing a series of successes","zh":"连连获胜；顺风顺水","ex":"The team is ___ with five wins in a row.","blankAns":"on a roll","exZh":"球队势不可挡，已经五连胜了。"},{"deck":"Unit 16: Progress","id":"on_the_right_track","idiom":"on the right track","en":"acting in a way that will lead to success","zh":"路子对了；做法正确","ex":"Your ideas are good – you're definitely ___.","blankAns":"on the right track","exZh":"你的想法不错，路子绝对是对的。"},{"deck":"Unit 16: Progress","id":"put_something_on_hold","idiom":"put something on hold","en":"to delay doing something until later","zh":"搁置；暂缓","ex":"We decided to ___ the expansion plans.","blankAns":"put on hold","exZh":"我们决定暂缓扩张计划。"},{"deck":"Unit 17: Expectation","id":"the_calm_before_the_storm","idiom":"the calm before the storm / the lull before the storm","en":"a quiet period before trouble or intense activity","zh":"暴风雨前的平静","ex":"This quiet week is probably ___.","blankAns":"the calm before the storm","exZh":"这个安静的一周很可能是暴风雨前的宁静。"},{"deck":"Unit 17: Expectation","id":"castles_in_the_air","idiom":"castles in the air","en":"unrealistic plans or hopes","zh":"空中楼阁；不切实际的幻想","ex":"His plans to become a millionaire overnight are just ___.","blankAns":"castles in the air","exZh":"他想一夜暴富的计划不过是空中楼阁。"},{"deck":"Unit 17: Expectation","id":"not_count_your_chickens","idiom":"not count your chickens / not count your chickens before they're hatched","en":"not to rely on something before it happens","zh":"别指望得太早；别高兴得太早","ex":"We might win, but let's ___.","blankAns":"not count our chickens","exZh":"我们也许会赢，但别高兴得太早。"},{"deck":"Unit 17: Expectation","id":"feel_something_in_your_bones","idiom":"feel something in your bones","en":"to have a strong feeling that something is true","zh":"直觉确信；骨子里感到","ex":"I ___ that this decision is wrong.","blankAns":"feel it in my bones","exZh":"我骨子里觉得这个决定是错的。"},{"deck":"Unit 17: Expectation","id":"not_have_a_prayer","idiom":"not have a prayer","en":"to have no chance of success","zh":"毫无希望；不可能成功","ex":"With that attitude, he ___ of passing.","blankAns":"doesn't have a prayer","exZh":"以那种态度，他根本没有希望通过。"},{"deck":"Unit 17: Expectation","id":"its_early_days","idiom":"it's early days / it's early in the day","en":"too soon to know what will happen","zh":"为时过早；现在下结论还太早","ex":"We're behind schedule, but ___ yet.","blankAns":"it's early days","exZh":"我们落后了，但现在下结论还为时过早。"},{"deck":"Unit 17: Expectation","id":"like_looking_for_a_needle_in_a_haystack","idiom":"like looking for a needle in a haystack","en":"extremely difficult or impossible to find","zh":"大海捞针","ex":"Trying to find my lost earring in the sand was ___.","blankAns":"like looking for a needle in a haystack","exZh":"想在沙子里找到我丢的耳环简直是大海捞针。"},{"deck":"Unit 17: Expectation","id":"a_long_shot","idiom":"a long shot","en":"something unlikely but worth trying","zh":"希望渺茫但值得一试的事","ex":"Applying for that job is ___, but I'll try anyway.","blankAns":"a long shot","exZh":"申请那份工作希望不大，但我还是要试试。"},{"deck":"Unit 17: Expectation","id":"on_the_cards","idiom":"on the cards","en":"very likely to happen","zh":"很可能发生；在预料之中","ex":"Another round of layoffs is ___.","blankAns":"on the cards","exZh":"又一轮裁员很可能发生。"},{"deck":"Unit 17: Expectation","id":"on_the_off_chance","idiom":"on the off-chance","en":"doing something hoping for a small possibility","zh":"抱着一线希望；碰碰运气","ex":"I called ___ that she might be free tonight.","blankAns":"on the off-chance","exZh":"我打了个电话，碰碰运气看她今晚是否有空。"},{"deck":"Unit 17: Expectation","id":"out_of_the_blue","idiom":"out of the blue","en":"unexpectedly","zh":"突然；出乎意料地","ex":"He announced his resignation ___.","blankAns":"out of the blue","exZh":"他突然宣布辞职。"},{"deck":"Unit 17: Expectation","id":"par_for_the_course","idiom":"par for the course","en":"normal or expected, usually in a negative sense","zh":"意料之中的事；常有的事","ex":"Delays are ___ when travelling during the holidays.","blankAns":"par for the course","exZh":"假期出行遇到延误是常有的事。"},{"deck":"Unit 17: Expectation","id":"not_a_snowballs_chance_in_hell","idiom":"not a snowball's chance in hell","en":"no chance at all","zh":"根本不可能；毫无机会","ex":"He ___ of winning against a professional.","blankAns":"doesn't have a snowball's chance in hell","exZh":"他根本不可能赢职业选手。"},{"deck":"Unit 18: Trouble and Difficulty","id":"be_asking_for_trouble","idiom":"be asking for trouble","en":"to behave in a way that invites problems","zh":"自找麻烦；自讨苦吃","ex":"Leaving your bike unlocked is ___.","blankAns":"asking for trouble","exZh":"不锁自行车简直是自找麻烦。"},{"deck":"Unit 18: Trouble and Difficulty","id":"bite_off_more_than_you_can_chew","idiom":"bite off more than you can chew","en":"to take on a task that is too big","zh":"贪多嚼不烂；承担不了的事情","ex":"I think I ___ by agreeing to organise the whole event.","blankAns":"bit off more than I can chew","exZh":"答应组织整个活动，我怕是揽了瓷器活。"},{"deck":"Unit 18: Trouble and Difficulty","id":"a_catch_22","idiom":"a Catch 22","en":"a situation where contradictory rules make a solution impossible","zh":"两难处境；悖论","ex":"You need experience to get the job, but you need the job to get experience – it's ___.","blankAns":"a Catch 22","exZh":"你需要经验才能得到这份工作，但你需要工作来获得经验——真是个悖论。"},{"deck":"Unit 18: Trouble and Difficulty","id":"a_fly_in_the_ointment","idiom":"a/the fly in the ointment","en":"a small problem that spoils something good","zh":"美中不足；扫兴的事","ex":"The only ___ was the rainy weather on the last day.","blankAns":"fly in the ointment","exZh":"唯一美中不足的是最后一天下雨了。"},{"deck":"Unit 18: Trouble and Difficulty","id":"not_have_a_leg_to_stand_on","idiom":"not have a leg to stand on","en":"to have no evidence or proof to support your claim","zh":"站不住脚；毫无根据","ex":"Without witnesses, you ___ in court.","blankAns":"don't have a leg to stand on","exZh":"没有证人，你在法庭上站不住脚。"},{"deck":"Unit 18: Trouble and Difficulty","id":"in_over_your_head","idiom":"in over your head","en":"in a situation that is too difficult for you","zh":"力不能及；陷入困境","ex":"I'm ___ with this maths homework.","blankAns":"in over my head","exZh":"这道数学作业对我来说太难了。"},{"deck":"Unit 18: Trouble and Difficulty","id":"out_of_the_frying_pan_into_the_fire","idiom":"out of the frying pan into the fire / from the frying pan into the fire","en":"moving from a bad situation to an even worse one","zh":"刚出虎穴又入狼窝；每况愈下","ex":"He left his stressful job to start his own business, but it went ___.","blankAns":"out of the frying pan into the fire","exZh":"他辞了压力大的工作去创业，结果境况更糟了。"},{"deck":"Unit 18: Trouble and Difficulty","id":"an_own_goal","idiom":"an own goal","en":"an action that accidentally harms your own interests","zh":"乌龙球；自毁长城的举动","ex":"His rude comment was ___; it cost him the promotion.","blankAns":"an own goal","exZh":"他的粗鲁评论是自毁长城，让他丢了升职机会。"},{"deck":"Unit 18: Trouble and Difficulty","id":"put_your_foot_in_it","idiom":"put your foot in it","en":"to say something that embarrasses or offends someone","zh":"说错话；失言","ex":"I really ___ when I asked about her husband – they'd just split up.","blankAns":"put my foot in it","exZh":"我问起她丈夫时真是太失言了——他们刚刚分手。"},{"deck":"Unit 18: Trouble and Difficulty","id":"a_stumbling_block","idiom":"a stumbling block","en":"an obstacle that prevents progress","zh":"绊脚石；障碍","ex":"The biggest ___ is the lack of funding.","blankAns":"stumbling block","exZh":"最大的绊脚石是资金短缺。"},{"deck":"Unit 18: Trouble and Difficulty","id":"teething_problems","idiom":"teething problems / teething troubles","en":"problems in the early stages of something","zh":"初期困难；磨合问题","ex":"The new system has some ___ but it will improve.","blankAns":"teething problems","exZh":"新系统有些磨合问题，但会好起来的。"},{"deck":"Unit 18: Trouble and Difficulty","id":"a_vicious_circle","idiom":"a vicious circle","en":"a situation where one problem causes another, making the original worse","zh":"恶性循环","ex":"Poor sleep causes stress, and stress causes poor sleep – it's ___.","blankAns":"a vicious circle","exZh":"睡眠差导致压力，压力又导致睡眠差——这是个恶性循环。"},{"deck":"Unit 19: Safety and Risk","id":"by_the_skin_of_your_teeth","idiom":"by the skin of your teeth","en":"only just; barely","zh":"侥幸；勉强","ex":"I caught the train ___.","blankAns":"by the skin of my teeth","exZh":"我勉强赶上了火车。"},{"deck":"Unit 19: Safety and Risk","id":"a_close_shave","idiom":"a close shave","en":"a situation where you nearly have an accident","zh":"侥幸脱险；死里逃生","ex":"That car nearly hit me – it was ___.","blankAns":"a close shave","exZh":"那辆车差点撞到我，真是死里逃生。"},{"deck":"Unit 19: Safety and Risk","id":"the_coast_is_clear","idiom":"the coast is clear","en":"it is safe to do something because no one is watching","zh":"四下无人；没有危险","ex":"Wait until ___ before you sneak out.","blankAns":"the coast is clear","exZh":"等四下无人的时候你再溜出去。"},{"deck":"Unit 19: Safety and Risk","id":"a_good_bet","idiom":"a good bet / a safe bet","en":"something likely to succeed or be useful","zh":"稳妥的选择；十拿九稳的事","ex":"Investing in technology stocks is usually ___.","blankAns":"a good bet","exZh":"投资科技股通常是个稳妥的选择。"},{"deck":"Unit 19: Safety and Risk","id":"in_safe_hands","idiom":"in safe hands","en":"being looked after by someone trustworthy","zh":"在可靠的人手里；安全无虞","ex":"Your children are ___ with us.","blankAns":"in safe hands","exZh":"你的孩子在我们这里很安全。"},{"deck":"Unit 19: Safety and Risk","id":"play_it_safe","idiom":"play it safe","en":"to avoid taking risks","zh":"求稳；谨慎行事","ex":"I decided to ___ and take the motorway rather than the back roads.","blankAns":"play it safe","exZh":"我决定稳妥一点，走高速公路不走小路。"},{"deck":"Unit 19: Safety and Risk","id":"be_playing_with_fire","idiom":"be playing with fire","en":"to do something risky that could cause serious trouble","zh":"玩火；冒险","ex":"You're ___ by lying to the tax authorities.","blankAns":"playing with fire","exZh":"你对税务部门撒谎是在玩火。"},{"deck":"Unit 19: Safety and Risk","id":"put_all_your_eggs_in_one_basket","idiom":"put all your eggs in one basket","en":"to depend entirely on one plan or possibility","zh":"孤注一掷；把一切赌在一个地方","ex":"Invest in several companies – don't ___.","blankAns":"put all your eggs in one basket","exZh":"多投资几家公司，别把鸡蛋放在一个篮子里。"},{"deck":"Unit 19: Safety and Risk","id":"be_skating_on_thin_ice","idiom":"be skating on thin ice","en":"to be in a risky situation that could cause trouble","zh":"如履薄冰；处境危险","ex":"He's ___ by constantly missing deadlines.","blankAns":"skating on thin ice","exZh":"他老是错过截止日期，处境岌岌可危。"},{"deck":"Unit 19: Safety and Risk","id":"stick_your_neck_out","idiom":"stick your neck out","en":"to take a risk by saying or doing something that might be criticised","zh":"冒险出头；敢说敢做","ex":"I'm going to ___ and suggest a completely different approach.","blankAns":"stick my neck out","exZh":"我要冒个风险，提出一个完全不同的方案。"},{"deck":"Unit 19: Safety and Risk","id":"take_your_life_in_your_hands","idiom":"take your life in your hands / take your life into your hands","en":"to do something extremely dangerous","zh":"冒生命危险；提着脑袋做事","ex":"You ___ crossing that busy road without a crossing.","blankAns":"take your life in your hands","exZh":"你不走人行横道穿过那条繁忙的马路简直是拿命在冒险。"},{"deck":"Unit 19: Safety and Risk","id":"to_be_on_the_safe_side","idiom":"to be on the safe side","en":"to avoid risk even if it's probably unnecessary","zh":"为保险起见；以防万一","ex":"I'll bring an umbrella just ___.","blankAns":"to be on the safe side","exZh":"我带把伞，以防万一。"},{"deck":"Unit 20: Money","id":"cost_an_arm_and_a_leg","idiom":"cost an arm and a leg","en":"to be very expensive","zh":"贵得离谱；花了一大笔钱","ex":"That holiday ___.","blankAns":"cost an arm and a leg","exZh":"那次度假花了一大笔钱。"},{"deck":"Unit 20: Money","id":"down_the_drain","idiom":"down the drain","en":"wasted or lost","zh":"付诸东流；白费了","ex":"All our hard work went ___ when the funding was cut.","blankAns":"down the drain","exZh":"资金一被砍，我们的所有努力都白费了。"},{"deck":"Unit 20: Money","id":"feel_the_pinch","idiom":"feel the pinch","en":"to have less money than before","zh":"手头拮据；感到经济压力","ex":"A lot of families are ___ because of rising prices.","blankAns":"feeling the pinch","exZh":"由于物价上涨，很多家庭都感到手头紧了。"},{"deck":"Unit 20: Money","id":"have_deep_pockets","idiom":"have deep pockets","en":"to have a lot of money","zh":"财力雄厚；家底殷实","ex":"The company ___ and can afford the lawsuit.","blankAns":"has deep pockets","exZh":"这家公司财力雄厚，打得起官司。"},{"deck":"Unit 20: Money","id":"in_the_red","idiom":"in the red","en":"owing money to someone; in debt","zh":"负债；亏损","ex":"We've been ___ for three months now.","blankAns":"in the red","exZh":"我们已经连续三个月亏损了。"},{"deck":"Unit 20: Money","id":"make_ends_meet","idiom":"make ends meet","en":"to have enough money to cover expenses","zh":"维持生计；收支平衡","ex":"With two jobs, she just about ___.","blankAns":"makes ends meet","exZh":"她打两份工，勉强维持生计。"},{"deck":"Unit 20: Money","id":"on_a_shoestring","idiom":"on a shoestring","en":"using very little money","zh":"小本经营；花极少的钱","ex":"They started the business ___.","blankAns":"on a shoestring","exZh":"他们白手起家小本经营。"},{"deck":"Unit 20: Money","id":"out_of_pocket","idiom":"out of pocket","en":"having lost money in a transaction","zh":"亏了钱；自掏腰包后没收回","ex":"After the trip, I was ___ by $200.","blankAns":"out of pocket","exZh":"旅行后我亏了200美元。"},{"deck":"Unit 20: Money","id":"be_rolling_in_it","idiom":"be rolling in it / be rolling in money","en":"to be extremely rich","zh":"腰缠万贯；富得流油","ex":"They live in a mansion – they must be ___.","blankAns":"rolling in it","exZh":"他们住豪宅，肯定腰缠万贯。"},{"deck":"Unit 20: Money","id":"a_small_fortune","idiom":"a small fortune","en":"a very large amount of money","zh":"一大笔钱","ex":"Repairing the car cost ___.","blankAns":"a small fortune","exZh":"修车花了一大笔钱。"},{"deck":"Unit 20: Money","id":"no_such_thing_as_a_free_lunch","idiom":"there's no such thing as a free lunch / there is no free lunch","en":"nothing is truly free; everything has a cost","zh":"天下没有免费的午餐","ex":"They offered a free trip, but ___ – you have to sit through a sales presentation.","blankAns":"there's no such thing as a free lunch","exZh":"他们提供免费旅行，但天下没有免费的午餐——你得听完一场销售推介。"},{"deck":"Unit 20: Money","id":"tighten_your_belt","idiom":"tighten your belt","en":"to spend less money","zh":"勒紧裤腰带；节衣缩食","ex":"We'll have to ___ if we want to save for a house.","blankAns":"tighten our belts","exZh":"如果我们想存钱买房，就得勒紧裤腰带了。"},{"deck":"Unit 21: Authority and Control","id":"be_breathing_down_someones_neck","idiom":"be breathing down someone's neck","en":"to watch someone very closely, often annoyingly","zh":"紧盯着某人；严密监视","ex":"My supervisor ___ on this project.","blankAns":"is breathing down my neck","exZh":"我的主管对这个项目盯得很紧。"},{"deck":"Unit 21: Authority and Control","id":"call_the_shots","idiom":"call the shots","en":"to be the person who makes the decisions","zh":"发号施令；说了算","ex":"In our house, my mum ___.","blankAns":"calls the shots","exZh":"在我们家，我妈说了算。"},{"deck":"Unit 21: Authority and Control","id":"get_out_of_hand","idiom":"get out of hand","en":"to become impossible to control","zh":"失控；无法收拾","ex":"The party ___ when uninvited guests arrived.","blankAns":"got out of hand","exZh":"不速之客来了之后，派对就失控了。"},{"deck":"Unit 21: Authority and Control","id":"go_over_someones_head","idiom":"go over someone's head","en":"to communicate with a higher authority, bypassing the person in charge","zh":"越级上报；越过某人","ex":"He ___ and complained directly to the director.","blankAns":"went over his manager's head","exZh":"他越过了经理直接向主管投诉。"},{"deck":"Unit 21: Authority and Control","id":"have_someone_eating_out_of_your_hand","idiom":"have someone eating out of your hand / have someone eating out of the palm of your hand","en":"to have complete control over someone because they admire you","zh":"完全掌控某人；使某人服服帖帖","ex":"The new teacher ___ by the end of the first week.","blankAns":"had the students eating out of her hand","exZh":"第一周结束时，新老师就把学生管得服服帖帖。"},{"deck":"Unit 21: Authority and Control","id":"in_high_places","idiom":"in high places","en":"having influential friends or connections","zh":"身居高位；有靠山","ex":"He got the contract because he has friends ___.","blankAns":"in high places","exZh":"他因为上头有人才拿到了合同。"},{"deck":"Unit 21: Authority and Control","id":"a_law_unto_yourself","idiom":"a law unto yourself","en":"someone who ignores rules and does what they want","zh":"我行我素的人；不守规矩","ex":"He's ___ – nobody can tell him what to do.","blankAns":"a law unto himself","exZh":"他是个我行我素的人，没人管得了他。"},{"deck":"Unit 21: Authority and Control","id":"on_top_of_something","idiom":"on top of something","en":"in control of a situation; dealing with it successfully","zh":"掌控局面；应对自如","ex":"Don't worry, I'm ___ the arrangements.","blankAns":"on top of","exZh":"别担心，我完全掌控着各项安排。"},{"deck":"Unit 21: Authority and Control","id":"pass_the_buck","idiom":"pass the buck","en":"to avoid responsibility and expect someone else to deal with it","zh":"推卸责任；踢皮球","ex":"When problems arise, he always tries to ___.","blankAns":"pass the buck","exZh":"一有问题，他总是推卸责任。"},{"deck":"Unit 21: Authority and Control","id":"pull_strings","idiom":"pull strings","en":"to use your influence to get something, often unfairly","zh":"走后门；利用关系","ex":"He got his son a job by ___.","blankAns":"pulling strings","exZh":"他靠走后门给儿子找了份工作。"},{"deck":"Unit 21: Authority and Control","id":"put_your_foot_down","idiom":"put your foot down","en":"to assert your authority and say something must stop","zh":"坚决反对；果断制止","ex":"I had to ___ and say no more video games.","blankAns":"put my foot down","exZh":"我不得不坚决制止，不准再玩电子游戏了。"},{"deck":"Unit 21: Authority and Control","id":"twist_someone_around_your_little_finger","idiom":"twist someone around your little finger / wrap someone around your little finger","en":"to be able to make someone do anything you want","zh":"玩弄于股掌之间；任意摆布","ex":"She can ___ – he never says no to her.","blankAns":"twist him around her little finger","exZh":"她完全把他玩弄于股掌之间——他从不拒绝她。"},{"deck":"Unit 21: Authority and Control","id":"twist_someones_arm","idiom":"twist someone's arm","en":"to persuade someone strongly to do something","zh":"强迫；劝诱","ex":"I didn't want to go, but she ___.","blankAns":"twisted my arm","exZh":"我本不想去，但她硬是说服了我。"},{"deck":"Unit 21: Authority and Control","id":"wear_the_trousers","idiom":"wear the trousers / wear the pants","en":"to be the dominant partner in a relationship","zh":"当家；说了算","ex":"In their marriage, it's clear who ___.","blankAns":"wears the trousers","exZh":"他们的婚姻里，谁当家一目了然。"},{"deck":"Unit 22: Limitations and Restrictions","id":"bend_the_rules","idiom":"bend the rules","en":"to allow something that is normally not allowed","zh":"通融；放宽规定","ex":"The guard agreed to ___ and let us in early.","blankAns":"bend the rules","exZh":"警卫同意通融一下，让我们早点进去。"},{"deck":"Unit 22: Limitations and Restrictions","id":"the_dos_and_donts","idiom":"the dos and don'ts","en":"rules about what you should and should not do","zh":"注意事项；规矩","ex":"Make sure you know ___ of the company before you start.","blankAns":"the dos and don'ts","exZh":"入职前务必了解公司的各项规定。"},{"deck":"Unit 22: Limitations and Restrictions","id":"draw_the_line","idiom":"draw the line","en":"to set a limit on what is acceptable","zh":"划定底线；有个限度","ex":"I don't mind working late, but I ___ at weekends.","blankAns":"draw the line","exZh":"我不介意加班，但周末是我的底线。"},{"deck":"Unit 22: Limitations and Restrictions","id":"a_fine_line_between_something","idiom":"a fine line between something","en":"a small difference between two things, often between acceptable and unacceptable","zh":"一线之隔；细微的差别","ex":"There's ___ confidence and arrogance.","blankAns":"a fine line between","exZh":"自信和傲慢之间只有一线之隔。"},{"deck":"Unit 22: Limitations and Restrictions","id":"have_your_hands_full","idiom":"have your hands full","en":"to be very busy","zh":"忙得不可开交","ex":"With three young children, she ___.","blankAns":"has her hands full","exZh":"她有三个小孩，忙得团团转。"},{"deck":"Unit 22: Limitations and Restrictions","id":"off_limits","idiom":"off limits","en":"not allowed to be entered or used","zh":"禁止入内；不准触碰","ex":"This area is ___ to unauthorised staff.","blankAns":"off limits","exZh":"此区域未经许可不得入内。"},{"deck":"Unit 22: Limitations and Restrictions","id":"out_of_bounds","idiom":"out of bounds","en":"not allowed; prohibited","zh":"禁止进入；不允许","ex":"The construction site is ___ to the public.","blankAns":"out of bounds","exZh":"工地不允许公众进入。"},{"deck":"Unit 22: Limitations and Restrictions","id":"over_the_top","idiom":"over the top","en":"excessive; too extreme","zh":"过头了；太夸张","ex":"The decorations were a bit ___ for a simple dinner party.","blankAns":"over the top","exZh":"对一个简单的晚宴来说，装饰有点过头了。"},{"deck":"Unit 22: Limitations and Restrictions","id":"overstep_the_mark","idiom":"overstep the mark","en":"to go beyond what is acceptable or allowed","zh":"越界；做得太过分","ex":"He ___ when he started criticising her family.","blankAns":"overstepped the mark","exZh":"他开始批评她的家人，这就太过分了。"},{"deck":"Unit 22: Limitations and Restrictions","id":"step_on_someones_toes","idiom":"step on someone's toes / tread on someone's toes","en":"to offend someone by interfering with their responsibilities","zh":"冒犯；触犯某人的职责范围","ex":"I hope I'm not ___ by giving this advice.","blankAns":"stepping on your toes","exZh":"我希望我提这个建议没有冒犯到你。"},{"deck":"Unit 22: Limitations and Restrictions","id":"with_no_strings_attached","idiom":"with no strings attached / without strings","en":"with no special conditions or obligations","zh":"无附带条件；无条件地","ex":"He offered me a loan ___.","blankAns":"with no strings attached","exZh":"他无附加条件地借给我一笔钱。"},{"deck":"Unit 22: Limitations and Restrictions","id":"your_hands_are_tied","idiom":"your hands are tied","en":"you are prevented from acting as you want","zh":"束手无策；无能为力","ex":"I'd like to help, but ___ by the regulations.","blankAns":"my hands are tied","exZh":"我很想帮忙，但规章制度让我束手无策。"},{"deck":"Unit 23: Loving and Liking","id":"carry_a_torch_for_someone","idiom":"carry a torch for someone","en":"to be secretly in love with someone","zh":"暗恋某人；单相思","ex":"He's been ___ her since high school.","blankAns":"carrying a torch for","exZh":"他从高中起就一直暗恋她。"},{"deck":"Unit 23: Loving and Liking","id":"common_or_garden","idiom":"common-or-garden / garden-variety","en":"very ordinary; nothing special","zh":"普普通通的；平凡的","ex":"It's just a ___ phone, nothing fancy.","blankAns":"common-or-garden","exZh":"就是一部普通手机，没什么特别的。"},{"deck":"Unit 23: Loving and Liking","id":"fall_head_over_heels","idiom":"fall head over heels / fall head over heels in love","en":"to fall deeply and completely in love","zh":"深深地爱上；神魂颠倒","ex":"They ___ the moment they met.","blankAns":"fell head over heels in love","exZh":"他们一见钟情，深深地坠入爱河。"},{"deck":"Unit 23: Loving and Liking","id":"have_a_soft_spot_for_someone","idiom":"have a soft spot for someone/something","en":"to be particularly fond of someone or something","zh":"对…特别有好感；偏爱","ex":"I've always ___ stray animals.","blankAns":"had a soft spot for","exZh":"我一直对流浪动物特别有感情。"},{"deck":"Unit 23: Loving and Liking","id":"head_and_shoulders_above_someone","idiom":"head and shoulders above someone/something","en":"much better than others","zh":"远远胜过；出类拔萃","ex":"Her work is ___ the rest of the team.","blankAns":"head and shoulders above","exZh":"她的工作比团队其他人强得多。"},{"deck":"Unit 23: Loving and Liking","id":"no_great_shakes","idiom":"no great shakes","en":"not very good or impressive","zh":"不怎么样；很一般","ex":"The restaurant was ___, honestly.","blankAns":"no great shakes","exZh":"说实话，那家餐厅不怎么样。"},{"deck":"Unit 23: Loving and Liking","id":"nothing_to_write_home_about","idiom":"nothing to write home about / not much to write home about","en":"ordinary; not especially good","zh":"一般般；没什么了不起","ex":"The movie was ___.","blankAns":"nothing to write home about","exZh":"那部电影一般般。"},{"deck":"Unit 23: Loving and Liking","id":"of_your_dreams","idiom":"of your dreams","en":"the best you could possibly imagine","zh":"梦寐以求的；理想的","ex":"She finally bought the house ___.","blankAns":"of her dreams","exZh":"她终于买到了梦寐以求的房子。"},{"deck":"Unit 23: Loving and Liking","id":"an_old_flame","idiom":"an old flame","en":"someone you had a romantic relationship with in the past","zh":"旧情人；老相好","ex":"I bumped into ___ at the supermarket.","blankAns":"an old flame","exZh":"我在超市碰见了老情人。"},{"deck":"Unit 23: Loving and Liking","id":"not_a_patch_on_someone","idiom":"not a patch on someone/something","en":"much less good than someone or something else","zh":"远不如；比…差远了","ex":"This sequel is ___ the original film.","blankAns":"not a patch on","exZh":"这部续集远不如原版电影。"},{"deck":"Unit 23: Loving and Liking","id":"a_saving_grace","idiom":"a saving grace","en":"the one good quality that saves something from being completely bad","zh":"可取之处；唯一优点","ex":"The hotel was small, but its location was ___.","blankAns":"a saving grace","exZh":"酒店虽小，但位置是它的可取之处。"},{"deck":"Unit 23: Loving and Liking","id":"there_are_plenty_more_fish_in_the_sea","idiom":"there are plenty more fish in the sea / there are other fish in the sea","en":"many other people you could have a relationship with","zh":"天涯何处无芳草；还有很多人可选","ex":"Don't worry about the breakup – ___.","blankAns":"there are plenty more fish in the sea","exZh":"别为分手难过——天涯何处无芳草。"},{"deck":"Unit 23: Loving and Liking","id":"think_the_world_of_someone","idiom":"think the world of someone","en":"to have a very high opinion of someone; to love and admire them","zh":"非常看重某人；极其喜爱","ex":"I ___ my grandfather; he's an inspiration.","blankAns":"think the world of","exZh":"我极其敬爱我的祖父，他是个鼓舞人心的人。"},{"deck":"Unit 23: Loving and Liking","id":"you_have_to_be_cruel_to_be_kind","idiom":"you have to be cruel to be kind","en":"sometimes being harsh is the best way to help someone","zh":"良药苦口；忠言逆耳","ex":"I told him the brutal truth – ___.","blankAns":"you have to be cruel to be kind","exZh":"我把残酷的真相告诉了他——毕竟忠言逆耳。"},{"deck":"Unit 24: Happiness and Sadness","id":"break_someones_heart","idiom":"break someone's heart","en":"to make someone very sad by ending a relationship","zh":"使某人心碎；伤某人的心","ex":"He ___ when he left without explanation.","blankAns":"broke her heart","exZh":"他不告而别让她心碎了。"},{"deck":"Unit 24: Happiness and Sadness","id":"down_in_the_dumps","idiom":"down in the dumps / in the dumps","en":"feeling sad or depressed","zh":"情绪低落；垂头丧气","ex":"She's been ___ since she lost her job.","blankAns":"down in the dumps","exZh":"她失业后一直情绪低落。"},{"deck":"Unit 24: Happiness and Sadness","id":"full_of_beans","idiom":"full of beans","en":"very energetic and cheerful","zh":"精力充沛；兴高采烈","ex":"The kids are ___ this morning.","blankAns":"full of beans","exZh":"孩子们今天早上精力充沛。"},{"deck":"Unit 24: Happiness and Sadness","id":"get_a_kick_out_of_something","idiom":"get a kick out of something","en":"to enjoy something very much","zh":"从…中得到乐趣；觉得…很带劲","ex":"I really ___ watching old comedy shows.","blankAns":"get a kick out of","exZh":"我从看老喜剧节目中得到了很大的乐趣。"},{"deck":"Unit 24: Happiness and Sadness","id":"get_on_top_of_you","idiom":"get on top of you","en":"to make you feel unable to cope","zh":"压得喘不过气；令你无法承受","ex":"All this work is starting to ___.","blankAns":"get on top of me","exZh":"这些工作开始让我吃不消了。"},{"deck":"Unit 24: Happiness and Sadness","id":"have_a_whale_of_a_time","idiom":"have a whale of a time","en":"to enjoy yourself very much","zh":"玩得极其痛快","ex":"We ___ at the concert last night.","blankAns":"had a whale of a time","exZh":"我们昨晚在音乐会上玩得特别痛快。"},{"deck":"Unit 24: Happiness and Sadness","id":"a_long_face","idiom":"a long face","en":"an unhappy or disappointed expression","zh":"愁眉苦脸；拉着脸","ex":"Why ___? What's wrong?","blankAns":"the long face","exZh":"为什么愁眉苦脸的？出什么事了？"},{"deck":"Unit 24: Happiness and Sadness","id":"look_on_the_bright_side","idiom":"look on the bright side","en":"to find something positive in a bad situation","zh":"往好处想；看光明的一面","ex":"It's raining, but ___ – we'll save money on watering the garden.","blankAns":"look on the bright side","exZh":"下雨了，但往好处想——省了浇花园的水费。"},{"deck":"Unit 24: Happiness and Sadness","id":"make_someones_day","idiom":"make someone's day","en":"to make someone very happy","zh":"让某人乐坏了；令某人一天都开心","ex":"Your compliment really ___.","blankAns":"made my day","exZh":"你的夸奖真让我开心极了。"},{"deck":"Unit 24: Happiness and Sadness","id":"not_a_happy_bunny","idiom":"not a happy bunny","en":"annoyed or unhappy","zh":"不高兴；不爽","ex":"She was ___ after waiting for an hour.","blankAns":"not a happy bunny","exZh":"等了一个小时后，她很不高兴。"},{"deck":"Unit 24: Happiness and Sadness","id":"on_top_of_the_world","idiom":"on top of the world","en":"extremely happy","zh":"幸福极了；得意洋洋","ex":"When I got the job offer, I felt ___.","blankAns":"on top of the world","exZh":"拿到工作录用通知时，我感觉幸福到了极点。"},{"deck":"Unit 24: Happiness and Sadness","id":"over_the_moon","idiom":"over the moon","en":"extremely pleased or happy","zh":"欣喜若狂；乐翻了","ex":"They were ___ when they found out they were having a baby.","blankAns":"over the moon","exZh":"他们得知怀了宝宝后欣喜若狂。"},{"deck":"Unit 24: Happiness and Sadness","id":"a_shoulder_to_cry_on","idiom":"a shoulder to cry on","en":"someone who listens sympathetically to your problems","zh":"可以倾诉的对象；提供安慰的人","ex":"She's always been ___ when I've had troubles.","blankAns":"a shoulder to cry on","exZh":"我遇到困难时，她一直是我的倾诉对象。"},{"deck":"Unit 25: Health, Illness, and Death","id":"alive_and_kicking","idiom":"alive and kicking","en":"still active and healthy","zh":"活蹦乱跳；健在","ex":"My grandmother is 90 but still ___.","blankAns":"alive and kicking","exZh":"我祖母90岁了，但依然健朗。"},{"deck":"Unit 25: Health, Illness, and Death","id":"at_deaths_door","idiom":"at death's door","en":"extremely ill and likely to die","zh":"病危；奄奄一息","ex":"He was ___ after the accident.","blankAns":"at death's door","exZh":"事故后他生命垂危。"},{"deck":"Unit 25: Health, Illness, and Death","id":"a_clean_bill_of_health","idiom":"a clean bill of health","en":"a statement that someone is completely healthy","zh":"健康证明；无恙的诊断","ex":"The doctor gave him ___.","blankAns":"a clean bill of health","exZh":"医生给他开了一份健康证明。"},{"deck":"Unit 25: Health, Illness, and Death","id":"be_dropping_like_flies","idiom":"be dropping like flies","en":"to fall ill or die in large numbers","zh":"大批倒下；纷纷病倒","ex":"Half the office is ___ with the flu.","blankAns":"dropping like flies","exZh":"办公室里一半的人都因流感倒下了。"},{"deck":"Unit 25: Health, Illness, and Death","id":"end_it_all","idiom":"end it all","en":"to kill oneself","zh":"自杀；了结此生","ex":"After years of depression, he sadly ___.","blankAns":"ended it all","exZh":"多年抑郁之后，他不幸了结了自己的生命。"},{"deck":"Unit 25: Health, Illness, and Death","id":"be_fighting_for_your_life","idiom":"be fighting for your life","en":"to be seriously ill or injured and in danger of dying","zh":"与死神搏斗；生命垂危","ex":"The climber is ___ after the avalanche.","blankAns":"fighting for his life","exZh":"那名登山者在雪崩后生命垂危。"},{"deck":"Unit 25: Health, Illness, and Death","id":"kick_the_bucket","idiom":"kick the bucket","en":"to die (informal)","zh":"翘辫子；一命呜呼","ex":"He finally ___ at the age of 99.","blankAns":"kicked the bucket","exZh":"他99岁时终于翘辫子了。"},{"deck":"Unit 25: Health, Illness, and Death","id":"knock_someone_for_six","idiom":"knock someone for six","en":"to shock or upset someone severely","zh":"给某人沉重打击；让某人大受打击","ex":"The news of her death ___.","blankAns":"knocked us for six","exZh":"她的死讯让我们深受打击。"},{"deck":"Unit 25: Health, Illness, and Death","id":"a_shadow_of_your_former_self","idiom":"a shadow of your former self","en":"much weaker or thinner than before","zh":"瘦弱得不成样子；今非昔比","ex":"After the illness, he was ___.","blankAns":"a shadow of his former self","exZh":"病后他瘦弱得不成样子。"},{"deck":"Unit 25: Health, Illness, and Death","id":"skin_and_bone","idiom":"skin and bone / skin and bones","en":"extremely thin, usually from illness","zh":"皮包骨头；骨瘦如柴","ex":"The stray dog was ___ when they found it.","blankAns":"skin and bone","exZh":"他们发现那只流浪狗时，它已经皮包骨头了。"},{"deck":"Unit 25: Health, Illness, and Death","id":"under_the_weather","idiom":"under the weather","en":"feeling slightly ill","zh":"身体不适；有点小病","ex":"I'm feeling ___ today, so I'll stay home.","blankAns":"under the weather","exZh":"我今天不太舒服，就待在家了。"},{"deck":"Unit 25: Health, Illness, and Death","id":"a_wake_up_call","idiom":"a wake-up call","en":"a shocking event that makes you realise a problem","zh":"警钟；当头棒喝","ex":"The heart attack was ___ for him to start exercising.","blankAns":"a wake-up call","exZh":"那次心脏病发作是让他开始锻炼的一记警钟。"},{"deck":"Unit 25: Health, Illness, and Death","id":"the_worse_for_wear","idiom":"the worse for wear","en":"tired, damaged, or not in good condition","zh":"疲惫不堪；破旧不堪","ex":"After the long hike, we all looked ___.","blankAns":"the worse for wear","exZh":"长途徒步后，我们都显得疲惫不堪。"}];
+
+        let currentDeck = [];
+        let flashcardQueue = [];
+        let totalFlashcards = 0;
+        let starredIdioms = JSON.parse(localStorage.getItem('starredIdioms')) || [];
+        
+        let selectedEng = null;
+        let selectedZh = null;
+        let matchPairsRemaining = 0;
+        let currentQuizItem = null;
+        let quizCorrect = 0;
+        let quizTotal = 0;
+        let currentMode = 'flashcard';
+        let isDarkMode = localStorage.getItem('darkMode') === 'true';
+        let loadedFiles = [];
+
+        function initApp() {
+            const savedFiles = localStorage.getItem('loadedFiles');
+            if (savedFiles) {
+                try {
+                    loadedFiles = JSON.parse(savedFiles);
+                    allIdioms = [];
+                    loadedFiles.forEach(function(f) {
+                        if (f.included) allIdioms = allIdioms.concat(f.idioms);
+                    });
+                    renderFileList();
+                } catch(e) {
+                    console.error('Could not restore files:', e);
+                    const savedData = localStorage.getItem('customIdiomsData');
+                    if (savedData) {
+                        try { allIdioms = JSON.parse(savedData); } catch(e2) {}
+                    }
+                }
+            } else {
+                const savedData = localStorage.getItem('customIdiomsData');
+                if (savedData) {
+                    try { allIdioms = JSON.parse(savedData); } catch(e) {}
+                }
+            }
+
+            const savedTitle = localStorage.getItem('appTitle');
+            if (savedTitle) {
+                document.getElementById('app-title-display').textContent = savedTitle;
+                document.getElementById('app-title-input').value = savedTitle;
+                document.title = savedTitle + ' | Idiom Master';
+            }
+
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkToggleBtn').textContent = '☀️ Light';
+            }
+
+            updateDeckDropdown();
+            setupKeyboardShortcuts();
+            
+            // Force code to wake up inside Flashcard Mode immediately
+            switchMode('flashcard');
+        }
+
+        function updateAppTitle(val) {
+            const title = val.trim() || 'Idiom Master';
+            document.getElementById('app-title-display').textContent = title;
+            document.title = title + ' | Idiom Master';
+            localStorage.setItem('appTitle', title);
+        }
+
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode', isDarkMode);
+            document.getElementById('darkToggleBtn').textContent = isDarkMode ? '☀️ Light' : '🌙 Dark';
+            localStorage.setItem('darkMode', isDarkMode);
+        }
+
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+                if (e.key === 'd' || e.key === 'D') { toggleDarkMode(); return; }
+
+                if (currentMode === 'flashcard') {
+                    if (e.key === ' ') { e.preventDefault(); flipCard(); }
+                    if (e.key === 'ArrowLeft')  { e.preventDefault(); markCard('review'); }
+                    if (e.key === 'ArrowRight') { e.preventDefault(); markCard('got_it'); }
+                }
+
+                if (currentMode === 'quiz') {
+                    const nextBtn = document.getElementById('quiz-next-btn');
+                    if (e.key === 'Enter' && !nextBtn.classList.contains('hidden')) { nextQuiz(); return; }
+                    const opts = document.querySelectorAll('.quiz-option:not(:disabled)');
+                    if (e.key === '1' && opts[0]) opts[0].click();
+                    if (e.key === '2' && opts[1]) opts[1].click();
+                    if (e.key === '3' && opts[2]) opts[2].click();
+                }
+            });
+        }
+
+        function rebuildAllIdioms() {
+            allIdioms = [];
+            loadedFiles.forEach(function(f) {
+                if (f.included) allIdioms = allIdioms.concat(f.idioms);
+            });
+            localStorage.setItem('customIdiomsData', JSON.stringify(allIdioms));
+            localStorage.setItem('loadedFiles', JSON.stringify(loadedFiles));
+            updateDeckDropdown();
+        }
+
+        function renderFileList() {
+            const list = document.getElementById('file-list');
+            if (!list) return; // Guard clause for student app environments
+            
+            const empty = document.getElementById('file-list-empty');
+            list.querySelectorAll('.file-row').forEach(function(r) { r.remove(); });
+
+            if (loadedFiles.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            loadedFiles.forEach(function(f, idx) {
+                const row = document.createElement('div');
+                row.className = 'file-row';
+
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'file-toggle' + (f.included ? '' : ' excluded');
+                toggleBtn.textContent = f.included ? '✓' : '○';
+                toggleBtn.onclick = function() {
+                    loadedFiles[idx].included = !loadedFiles[idx].included;
+                    renderFileList();
+                    rebuildAllIdioms();
+                };
+
+                const nameEl = document.createElement('span');
+                nameEl.className = 'file-name';
+                nameEl.textContent = f.name;
+
+                const countEl = document.createElement('span');
+                countEl.className = 'file-count';
+                countEl.textContent = f.idioms.length + ' idioms';
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'file-remove';
+                removeBtn.textContent = '✕';
+                removeBtn.onclick = function() {
+                    loadedFiles.splice(idx, 1);
+                    renderFileList();
+                    rebuildAllIdioms();
+                };
+
+                row.appendChild(toggleBtn);
+                row.appendChild(nameEl);
+                row.appendChild(countEl);
+                row.appendChild(removeBtn);
+                list.appendChild(row);
+            });
+        }
+
+        function addFileToList(name, idioms) {
+            const existingIdx = loadedFiles.findIndex(function(f) { return f.name === name; });
+            if (existingIdx >= 0) {
+                loadedFiles[existingIdx].idioms = idioms;
+            } else {
+                loadedFiles.push({ name: name, idioms: idioms, included: true });
+            }
+            renderFileList();
+            rebuildAllIdioms();
+        }
+
+        function handleFileUpload(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
+            let pending = files.length;
+            let errors = [];
+
+            files.forEach(function(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (!Array.isArray(data) || !data[0].id || !data[0].idiom) throw new Error('Invalid format');
+                        addFileToList(file.name, data);
+                    } catch(err) {
+                        errors.push(file.name + ': ' + err.message);
+                    }
+                    pending--;
+                    if (pending === 0 && errors.length) {
+                        alert('Some files failed to load:\n' + errors.join('\n'));
+                    }
+                };
+                reader.readAsText(file);
+            });
+            event.target.value = '';
+        }
+
+        function loadJSONFromTextarea() {
+            try {
+                const text = document.getElementById('json-input').value.trim();
+                const data = JSON.parse(text);
+                if (!Array.isArray(data) || data.length === 0 || !data[0].id || !data[0].idiom) {
+                    throw new Error('Invalid format. Must be an array of idiom objects.');
+                }
+                const label = data[0].deck ? data[0].deck + ' (pasted)' : 'Pasted JSON';
+                addFileToList(label, data);
+                document.getElementById('json-input').value = '';
+                hidePastePanel();
+            } catch(e) {
+                alert('Error loading JSON: ' + e.message);
+            }
+        }
+
+        function showPastePanel() { document.getElementById('paste-panel').classList.remove('hidden'); }
+        function hidePastePanel() { document.getElementById('paste-panel').classList.add('hidden'); }
+
+        function exportJSON() {
+            const dataStr = JSON.stringify(allIdioms, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'idioms_export.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function exportApp() {
+            if (allIdioms.length === 0) {
+                alert('No idioms loaded. Please add at least one JSON file before exporting the app.');
+                return;
+            }
+
+            let html = document.documentElement.outerHTML;
+            html = html.replace(/<button[^>]*id="settingsBtn"[^>]*>.*?<\/button>/s, '');
+            html = html.replace(/<div[^>]*id="view-data"[\s\S]*?^        <\/div>/m, '');
+            html = html.replace(
+                /let allIdioms\s*=\s*\[[\s\S]*?\];/,
+                'let allIdioms = ' + JSON.stringify(allIdioms) + ';'
+            );
+
+            const savedTitle = localStorage.getItem('appTitle') || 'Idiom Master';
+            html = html.replace(/<title>.*?<\/title>/, '<title>' + savedTitle + '</title>');
+
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const filename = savedTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.html';
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function updateDeckDropdown() {
+            const select = document.getElementById('deckSelect');
+            const currentSelection = select.value;
+            select.innerHTML = '';
+
+            const decks = [...new Set(allIdioms.map(function(item) { return item.deck; }))];
+
+            decks.forEach(function(deck) {
+                const opt = document.createElement('option');
+                opt.value = deck;
+                opt.innerText = 'Deck: ' + deck;
+                select.appendChild(opt);
+            });
+
+            const starOpt = document.createElement('option');
+            starOpt.value = 'starred';
+            starOpt.innerText = '⭐ My Starred Idioms (生词本)';
+            select.appendChild(starOpt);
+
+            if (decks.includes(currentSelection) || currentSelection === 'starred') {
+                select.value = currentSelection;
+            } else if (decks.length > 0) {
+                select.value = decks[0];
+            }
+
+            updateDeckSelection();
+        }
+
+        function updateDeckSelection() {
+            const select = document.getElementById('deckSelect');
+            const starredEmpty = document.getElementById('starred-empty');
+
+            if (select.value === 'starred') {
+                currentDeck = allIdioms.filter(item => starredIdioms.includes(item.id));
+                if (currentDeck.length === 0) {
+                    document.getElementById('flashcard-content').classList.add('hidden');
+                    document.getElementById('flashcard-done').classList.add('hidden');
+                    starredEmpty.classList.remove('hidden');
+                    return;
+                }
+            } else {
+                currentDeck = allIdioms.filter(i => i.deck === select.value);
+            }
+
+            starredEmpty.classList.add('hidden');
+            
+            if(!document.getElementById('view-flashcard').classList.contains('hidden')) resetFlashcards();
+            if(!document.getElementById('view-match').classList.contains('hidden')) startMatch();
+            if(!document.getElementById('view-quiz').classList.contains('hidden')) { quizCorrect = 0; quizTotal = 0; updateQuizScore(); nextQuiz(); }
+        }
+
+        function switchToStarred() {
+            const select = document.getElementById('deckSelect');
+            select.value = 'starred';
+            switchMode('flashcard');
+        }
+
+        function changeDeck() { updateDeckSelection(); }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.nav-buttons button').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.getElementById('btn-' + mode);
+            if (activeBtn) activeBtn.classList.add('active');
+            document.querySelectorAll('.view-panel').forEach(view => view.classList.add('hidden'));
+            
+            const panel = document.getElementById('view-' + mode);
+            if(panel) panel.classList.remove('hidden');
+            document.getElementById('progressBar').style.width = '0%';
+
+            if (mode === 'flashcard') resetFlashcards();
+            if (mode === 'match') startMatch();
+            if (mode === 'quiz') { quizCorrect = 0; quizTotal = 0; updateQuizScore(); nextQuiz(); }
+        }
+
+        function resetFlashcards() {
+            if (currentDeck.length === 0) {
+                document.getElementById('flashcard-content').classList.add('hidden');
+                return;
+            }
+            flashcardQueue = [...currentDeck].sort(() => 0.5 - Math.random());
+            totalFlashcards = flashcardQueue.length;
+            document.getElementById('flashcard-content').classList.remove('hidden');
+            document.getElementById('flashcard-done').classList.add('hidden');
+            updateFlashcardProgress();
+            renderNextCard();
+        }
+
+        function renderNextCard() {
+            const cardEl = document.getElementById('active-card');
+            cardEl.classList.remove('is-flipped');
+
+            if (flashcardQueue.length === 0) {
+                document.getElementById('flashcard-content').classList.add('hidden');
+                document.getElementById('flashcard-done').classList.remove('hidden');
+                return;
+            }
+
+            const current = flashcardQueue[0];
+            const remaining = new Set(flashcardQueue.map(i => i.id)).size;
+            const done = totalFlashcards - remaining;
+            document.getElementById('card-counter').textContent = (done + 1) + ' / ' + totalFlashcards;
+
+            document.getElementById('fc-front-text').innerText = current.idiom;
+            document.getElementById('fc-zh').innerText = current.zh;
+            document.getElementById('fc-en').innerText = current.en;
+            document.getElementById('fc-ex').innerText = current.ex.replace('___', '___ (' + current.blankAns + ')');
+            document.getElementById('fc-exZh').innerText = current.exZh;
+
+            const starBtn = document.getElementById('star-btn');
+            starBtn.className = starredIdioms.includes(current.id) ? 'star-btn starred' : 'star-btn';
+        }
+
+        function flipCard() { document.getElementById('active-card').classList.toggle('is-flipped'); }
+
+        function markCard(status) {
+            if (flashcardQueue.length === 0) return;
+            const current = flashcardQueue.shift();
+            if (status === 'review') flashcardQueue.push(current);
+            updateFlashcardProgress();
+            setTimeout(renderNextCard, 150);
+        }
+
+        function updateFlashcardProgress() {
+            const completed = totalFlashcards - new Set(flashcardQueue.map(i => i.id)).size;
+            const percentage = totalFlashcards === 0 ? 0 : (completed / totalFlashcards) * 100;
+            document.getElementById('progressBar').style.width = `${percentage}%`;
+        }
+
+        function toggleStar(e) {
+            e.stopPropagation();
+            if (flashcardQueue.length === 0) return;
+            const currentId = flashcardQueue[0].id;
+            const starBtn = document.getElementById('star-btn');
+            
+            if (starredIdioms.includes(currentId)) {
+                starredIdioms = starredIdioms.filter(id => id !== currentId);
+                starBtn.classList.remove('starred');
+            } else {
+                starredIdioms.push(currentId);
+                starBtn.classList.add('starred');
+            }
+            localStorage.setItem('starredIdioms', JSON.stringify(starredIdioms));
+        }
+
+        function startMatch() {
+            if (currentDeck.length === 0) return;
+            document.getElementById('match-game-board').classList.remove('hidden');
+            document.getElementById('match-done').classList.add('hidden');
+            document.getElementById('progressBar').style.width = '0%';
+            selectedEng = selectedZh = null;
+
+            let shuffled = [...currentDeck].sort(() => 0.5 - Math.random());
+            let selectedItems = shuffled.slice(0, Math.min(5, shuffled.length));
+            matchPairsRemaining = selectedItems.length;
+
+            let engList = selectedItems.map(i => ({ id: i.id, text: i.idiom })).sort(() => 0.5 - Math.random());
+            let zhList = selectedItems.map(i => ({ id: i.id, text: i.zh })).sort(() => 0.5 - Math.random());
+            renderMatchColumns(engList, zhList);
+        }
+
+        function renderMatchColumns(engList, zhList) {
+            const container = document.getElementById('match-game-board');
+            container.innerHTML = `<div class="match-column" id="col-eng"></div><div class="match-column" id="col-zh"></div>`;
+
+            engList.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'match-item eng-item'; div.innerText = item.text; div.dataset.id = item.id;
+                div.onclick = () => handleMatchClick(div, 'eng');
+                document.getElementById('col-eng').appendChild(div);
+            });
+
+            zhList.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'match-item zh-item'; div.innerText = item.text; div.dataset.id = item.id;
+                div.onclick = () => handleMatchClick(div, 'zh');
+                document.getElementById('col-zh').appendChild(div);
+            });
+        }
+
+        function handleMatchClick(element, type) {
+            if (element.classList.contains('matched')) return;
+            document.querySelectorAll('.match-item').forEach(el => el.classList.remove('error'));
+
+            if (type === 'eng') {
+                if (selectedEng) selectedEng.classList.remove('selected');
+                selectedEng = element; selectedEng.classList.add('selected');
+            } else {
+                if (selectedZh) selectedZh.classList.remove('selected');
+                selectedZh = element; selectedZh.classList.add('selected');
+            }
+
+            if (selectedEng && selectedZh) {
+                if (selectedEng.dataset.id === selectedZh.dataset.id) {
+                    selectedEng.classList.replace('selected', 'matched');
+                    selectedZh.classList.replace('selected', 'matched');
+                    matchPairsRemaining--; selectedEng = selectedZh = null;
+                    
+                    const total = document.querySelectorAll('.eng-item').length;
+                    document.getElementById('progressBar').style.width = `${((total - matchPairsRemaining) / total) * 100}%`;
+
+                    if (matchPairsRemaining === 0) {
+                        setTimeout(() => {
+                            document.getElementById('match-game-board').classList.add('hidden');
+                            document.getElementById('match-done').classList.remove('hidden');
+                        }, 400);
+                    }
+                } else {
+                    selectedEng.classList.remove('selected'); selectedZh.classList.remove('selected');
+                    selectedEng.classList.add('error'); selectedZh.classList.add('error');
+                    selectedEng = selectedZh = null;
+                }
+            }
+        }
+
+        function updateQuizScore() {
+            document.getElementById('quiz-correct').textContent = quizCorrect;
+            document.getElementById('quiz-total').textContent = quizTotal;
+        }
+
+        function nextQuiz() {
+            if (currentDeck.length === 0) return;
+            document.getElementById('quiz-next-btn').classList.add('hidden');
+            document.getElementById('quiz-zh-hint').style.display = 'none';
+            
+            currentQuizItem = currentDeck[Math.floor(Math.random() * currentDeck.length)];
+            let distractors = currentDeck.filter(item => item.id !== currentQuizItem.id).sort(() => 0.5 - Math.random());
+            let optionsData = [currentQuizItem, distractors[0], distractors[1]].filter(Boolean);
+            
+            if (optionsData.length < 3) {
+                 let fallback = allIdioms.filter(item => item.id !== currentQuizItem.id).sort(() => 0.5 - Math.random());
+                 while(optionsData.length < 3 && fallback.length > 0) optionsData.push(fallback.pop());
+            }
+
+            optionsData.sort(() => 0.5 - Math.random());
+
+            document.getElementById('quiz-sentence').innerHTML = currentQuizItem.ex.replace('___', '<strong>______</strong>');
+
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+            
+            optionsData.forEach((item, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'quiz-option';
+                const isCorrect = item.id === currentQuizItem.id;
+                const label = isCorrect ? item.blankAns : item.idiom;
+                btn.innerText = (idx + 1) + '.  ' + label;
+                btn.dataset.correct = isCorrect ? 'true' : 'false';
+                btn.onclick = () => handleQuizAnswer(btn, isCorrect);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function handleQuizAnswer(btn, isCorrect) {
+            quizTotal++;
+            if (isCorrect) quizCorrect++;
+            updateQuizScore();
+
+            document.querySelectorAll('.quiz-option').forEach(b => {
+                b.disabled = true;
+                if (b.dataset.correct === 'true') b.classList.add('correct');
+            });
+
+            if (isCorrect) {
+                document.getElementById('quiz-sentence').innerHTML = currentQuizItem.ex.replace('___', '<span style="color:var(--success); font-weight:bold;">' + currentQuizItem.blankAns + '</span>');
+                document.getElementById('progressBar').style.width = '100%';
+                setTimeout(() => { document.getElementById('progressBar').style.width = '0%'; }, 500);
+            } else {
+                btn.classList.add('wrong');
+            }
+            
+            const hint = document.getElementById('quiz-zh-hint');
+            hint.innerHTML = '<strong>💡 ' + currentQuizItem.idiom + ':</strong> ' + currentQuizItem.exZh;
+            hint.style.display = 'block';
+
+            document.getElementById('quiz-next-btn').classList.remove('hidden');
+        }
+
+        window.onload = initApp;
+    </script>
+
+</body></html>
